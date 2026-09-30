@@ -1,6 +1,7 @@
 Thai - check done
 Long - done
 Ethan - check done
+Duong - check done
 <<<<<<< HEAD
 
 
