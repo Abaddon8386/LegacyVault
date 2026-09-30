@@ -1,6 +1,7 @@
 Thai - check done
 Long - done
 Ethan - check done
+<<<<<<< HEAD
 
 
 2.	Quy trình tạo di chúc cũng như kế thừa tài sản ở Việt Nam
@@ -39,4 +40,7 @@ GIAI ĐOẠN 2: QUY TRÌNH KHAI NHẬN & CHUYỂN QUYỀN SỞ HỮU (Sau khi ng
 •	Nộp hồ sơ sang tên Sổ đỏ/Đăng ký xe/Rút tiền tiết kiệm.
 •	Thực hiện nghĩa vụ tài chính (Thuế thu nhập cá nhân và Lệ phí trước bạ).
 •	Lưu ý: Thừa kế giữa: Vợ - chồng; Cha mẹ - con cái; Ông bà - cháu; Anh chị em ruột được miễn Thuế TNCN và Lệ phí trước bạ.
+=======
+Ân - check done
+>>>>>>> bb7247d1eebf7d4a3078b06ea8022f2933ae7289
 
