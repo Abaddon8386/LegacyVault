@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<mssql-jdbc.version>13.6.0.jre11</mssql-jdbc.version>
 	</properties>
 	<dependencies>
 		<dependency>

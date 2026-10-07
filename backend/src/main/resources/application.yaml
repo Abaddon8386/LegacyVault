@@ -1,3 +1,15 @@
 spring:
   application:
     name: legacyvault-backend
+
+  datasource:
+    url: jdbc:sqlserver://ABADDON:1433;databaseName=LegacyVault;encrypt=true;trustServerCertificate=true;integratedSecurity=true
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
