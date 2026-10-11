@@ -1,6 +1,7 @@
+
 # LEGACYVAULT — PS-73 DATABASE SETUP GUIDE
 
-**Phiên bản:** v4 (Markdown)
+**Phiên bản:** v5 (Markdown, cập nhật theo Data Dictionary UUID mới)
 **Phạm vi:** Bắt đầu từ chuẩn bị SQL Server/database, cài đặt Flyway, chạy migration, seed dữ liệu và kiểm tra hoàn tất.
 
 > **Mục tiêu:** Hướng dẫn thành viên chuẩn bị SQL Server database tên `LegacyVault`, cấu hình Backend Spring Boot, thêm Flyway vào Maven, chạy migration, nạp dữ liệu thử nghiệm và kiểm tra kết quả.
@@ -167,7 +168,21 @@ spring:
     database-platform: org.hibernate.dialect.SQLServerDialect
 ```
 
-Quan trọng: `filesystem:../database/migration` là đường dẫn tương đối với **Working directory** khi chạy ứng dụng. Với Working directory là thư mục `backend`, đường dẫn này trỏ tới `database/migration` ở root repository. Nếu Working directory khác, hãy điều chỉnh đường dẫn cho đúng hoặc thống nhất Working directory trong Run Configuration.
+Quan trọng: `filesystem:../database/migration` là đường dẫn tương đối với **Working directory** khi chạy ứng dụng. Với Working directory là thư mục `backend`, đường dẫn này trỏ tới `database/migration` ở root repository.
+
+**Nếu `../` không hoạt động**, kiểm tra trường **Working directory** trong Run Configuration trước. Nếu Working directory đang là root repository `LegacyVault`, đổi cấu hình thành:
+
+```yaml
+spring:
+  flyway:
+    locations: filesystem:database/migration
+```
+
+Tóm lại:
+- Working directory = `LegacyVault/backend` → dùng `filesystem:../database/migration`.
+- Working directory = `LegacyVault` → dùng `filesystem:database/migration`.
+
+Chỉ dùng một giá trị phù hợp với Working directory thực tế; không khai báo cả hai đường dẫn cùng lúc. Nếu vẫn không tìm thấy migration, xác nhận thư mục tồn tại và đường dẫn tương đối từ Working directory trỏ đúng tới `database/migration`.
 
 > **Không để Hibernate tự tạo schema:** Giữ `spring.jpa.hibernate.ddl-auto: none`. Flyway quản lý migration; không đổi sang `create/update` để né lỗi.
 
@@ -216,6 +231,8 @@ Xác nhận `DB_NAME()` trả về `LegacyVault` khi chạy các truy vấn ki�
 1. Mở `database/migration` và xem file migration đã commit trên branch.
 2. Không sửa file migration đã được áp dụng trên database dùng chung; nếu cần thay đổi schema, tạo migration phiên bản tiếp theo theo quy ước nhóm.
 3. Đảm bảo dependency Flyway đã tải thành công và `DB_URL`/Working directory đúng.
+4. Data Dictionary UUID mới yêu cầu `public_id` trên các bảng được chỉ định, cùng các cột `users.deleted_at`, `beneficiaries.date_of_birth` và `beneficiaries.relationship_to_owner`. Xác nhận các migration bổ sung các cột này có trong branch và chạy theo đúng thứ tự version.
+5. Nếu migration V2/V3 từng thất bại, xem log và `flyway_schema_history` trước khi thử lại. Không sửa migration đã áp dụng thành công trên database dùng chung; nếu cần điều chỉnh schema sau đó, tạo migration phiên bản kế tiếp. Chỉ sửa file migration bị lỗi và chưa được áp dụng thành công sau khi xác nhận trạng thái của tất cả môi trường nhóm.
 
 ### 5.2. Chạy ứng dụng
 
@@ -247,7 +264,14 @@ WHERE TABLE_TYPE = 'BASE TABLE'
 ORDER BY TABLE_SCHEMA, TABLE_NAME;
 ```
 
-Các bảng nghiệp vụ đã được ghi nhận trong schema hiện tại gồm `users`, `roles`, `user_roles`, `vaults`, `assets`, `beneficiaries`, `asset_allocations`, `trustees`, `dms_configs`, `vitality_check_logs` và `audit_logs`. Danh sách thực tế phải được xác nhận bằng truy vấn trên database của bạn; có thể xuất hiện thêm bảng metadata Flyway.
+Data Dictionary UUID mới gồm 14 bảng: `users`, `roles`, `user_roles`, `vaults`, `assets`, `asset_versions`, `trustees`, `beneficiaries`, `asset_allocations`, `dms_configs`, `vitality_check_logs`, `audit_logs`, `legal_documents` và `legal_verifications`. Danh sách thực tế phải được xác nhận bằng truy vấn trên database của bạn; có thể xuất hiện thêm bảng metadata Flyway.
+
+Theo Data Dictionary mới, các bảng tài nguyên được chỉ định có `public_id` kiểu `UNIQUEIDENTIFIER UNIQUE NOT NULL` để dùng làm mã công khai trong API; khóa nội bộ vẫn là `BIGINT`. Không đưa các ID `BIGINT` nội bộ ra API công khai. Bản cập nhật hiện tại cũng có:
+- `users.deleted_at DATETIME2 NULL` cho xóa mềm.
+- `beneficiaries.date_of_birth DATE NULL` và `beneficiaries.relationship_to_owner NVARCHAR(100) NULL`.
+- `asset_versions` để lưu phiên bản file và SHA-256; `legal_documents` và `legal_verifications` để quản lý hồ sơ/xác minh pháp lý.
+
+Các cột mới trong Data Dictionary chỉ có hiệu lực trên database sau khi migration tương ứng đã chạy thành công. Kiểm tra schema thật trước khi seed hoặc chạy API.
 
 ### 5.5. Nguyên tắc migration khi làm nhóm
 
@@ -278,7 +302,10 @@ UNION ALL SELECT 'beneficiaries', COUNT_BIG(*) FROM dbo.beneficiaries
 UNION ALL SELECT 'trustees', COUNT_BIG(*) FROM dbo.trustees
 UNION ALL SELECT 'asset_allocations', COUNT_BIG(*) FROM dbo.asset_allocations
 UNION ALL SELECT 'dms_configs', COUNT_BIG(*) FROM dbo.dms_configs
-UNION ALL SELECT 'vitality_check_logs', COUNT_BIG(*) FROM dbo.vitality_check_logs;
+UNION ALL SELECT 'vitality_check_logs', COUNT_BIG(*) FROM dbo.vitality_check_logs
+UNION ALL SELECT 'asset_versions', COUNT_BIG(*) FROM dbo.asset_versions
+UNION ALL SELECT 'legal_documents', COUNT_BIG(*) FROM dbo.legal_documents
+UNION ALL SELECT 'legal_verifications', COUNT_BIG(*) FROM dbo.legal_verifications;
 ```
 
 Các bản ghi đã được xác nhận trước đây gồm một Owner thử nghiệm, một Vault, hai Assets, hai Beneficiaries và hai Asset Allocations. Các bảng Trustee, DMS config và vitality log cần được xác nhận bằng kết quả thực tế.
@@ -361,7 +388,7 @@ Các truy vấn trên kỳ vọng không trả về dòng nào. Nếu có dòng,
 | `Connection refused` | TCP/IP tắt hoặc port sai. | Kiểm tra TCP/IP, port thực tế và endpoint trong `DB_URL`. |
 | `Login failed for user` | Tài khoản chạy ứng dụng không có quyền. | So sánh tài khoản Windows của SSMS/IntelliJ và yêu cầu quản trị viên cấp quyền. |
 | `Cannot open database LegacyVault` | Database không tồn tại/offline hoặc thiếu quyền. | Kiểm tra `sys.databases` và quyền; không tạo database trên server chia sẻ nếu chưa được phép. |
-| Flyway không tìm thấy migration | `flyway.locations` sai hoặc Working directory sai. | Xác minh đường dẫn `database/migration` và Run Configuration. |
+| Flyway không tìm thấy migration | `flyway.locations` không khớp Working directory. | Working directory ở `backend` dùng `filesystem:../database/migration`; ở root `LegacyVault` dùng `filesystem:database/migration`. |
 | Flyway checksum mismatch | File migration đã chạy bị sửa. | Không sửa metadata thủ công; khôi phục migration đã commit hoặc thống nhất migration mới với nhóm. |
 | `Invalid object name` | Migration chưa chạy hoặc đang query nhầm database/schema. | Kiểm tra `DB_NAME()`, `flyway_schema_history` và danh sách bảng. |
 | `Invalid column name assigned_by` | Dùng tên cột cũ. | Dùng `assigned_by_user_id` theo schema hiện tại. |
@@ -374,12 +401,14 @@ Các truy vấn trên kỳ vọng không trả về dòng nào. Nếu có dòng,
 - [ ] Database `LegacyVault` tồn tại và ở trạng thái `ONLINE`.
 - [ ] `backend/pom.xml` có dependency Flyway cần thiết, không bị khai báo trùng.
 - [ ] Maven tải dependency thành công.
-- [ ] `application.yaml` bật Flyway và `flyway.locations` trỏ đúng thư mục migration.
+- [ ] `application.yaml` bật Flyway và `flyway.locations` trỏ đúng thư mục migration theo Working directory (`filesystem:../database/migration` hoặc `filesystem:database/migration`).
 - [ ] `DB_URL` trỏ đúng endpoint SQL Server và `databaseName=LegacyVault`.
 - [ ] `spring.jpa.hibernate.ddl-auto` vẫn là `none`.
 - [ ] Backend khởi động và Flyway migration chạy thành công.
 - [ ] `flyway_schema_history` ghi nhận migration `success = 1`.
-- [ ] Danh sách bảng, roles, dữ liệu seed và khóa/quan hệ đã được kiểm tra.
+- [ ] Đã kiểm tra đủ các bảng theo Data Dictionary mới, bao gồm `asset_versions`, `legal_documents`, `legal_verifications`.
+- [ ] Đã xác nhận `public_id`, `users.deleted_at`, `beneficiaries.date_of_birth` và `beneficiaries.relationship_to_owner` tồn tại sau migration.
+- [ ] Danh sách roles, dữ liệu seed và khóa/quan hệ đã được kiểm tra.
 - [ ] Không có mật khẩu, token, key hoặc dữ liệu cá nhân thật trong Git/tài liệu.
 - [ ] Đã lưu log/ảnh chụp/kết quả SQL cần thiết vào ticket PS-73 hoặc vị trí nhóm thống nhất.
 
@@ -393,3 +422,4 @@ Các truy vấn trên kỳ vọng không trả về dòng nào. Nếu có dòng,
 - SSMS downloads: https://learn.microsoft.com/sql/ssms/download-sql-server-management-studio-ssms
 - Flyway documentation: https://documentation.red-gate.com/flyway
 - Spring Boot documentation: https://docs.spring.io/spring-boot/
+
