@@ -12,6 +12,12 @@ import CreateVaultModal from '../../components/vault/CreateVaultModal.jsx';
 import LivingHeritageWave from '../../components/vault/LivingHeritageWave.jsx';
 import './VaultOverviewPage.css';
 
+const formatVaultId = (rawId) => {
+  if (!rawId) return '#VLT-0001';
+  const cleanId = String(rawId).replace(/^vlt-/, '').toUpperCase();
+  return cleanId.startsWith('#') ? cleanId : `#VLT-${cleanId}`;
+};
+
 export default function VaultOverviewPage({
   lang = 'vi',
   showDevToolbar = false,
@@ -25,7 +31,28 @@ export default function VaultOverviewPage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [copiedId, setCopiedId] = useState(false);
   const heroCardRef = useRef(null);
+
+  const handleCopyId = useCallback(async (idToCopy) => {
+    if (!idToCopy) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(String(idToCopy));
+      } else if (typeof document !== 'undefined') {
+        const textArea = document.createElement('textarea');
+        textArea.value = String(idToCopy);
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch {
+      // Graceful fallback
+    }
+  }, []);
 
   // Hero Card background cursor spotlight handler — purely decorative background layer
   const handleHeroMouseMove = useCallback((e) => {
@@ -144,11 +171,11 @@ export default function VaultOverviewPage({
 
   const content = {
     vi: {
-      overviewEyebrow: 'KHO DI SẢN SỐ ĐANG HOẠT ĐỘNG',
+      overviewEyebrow: 'KHO DI SẢN SỐ',
       vaultIdLabel: 'Mã định danh kho:',
       createdLabel: 'Khởi tạo:',
       ownerRoleLabel: 'Chủ sở hữu:',
-      ownerRoleVal: 'Vault Owner (Độc quyền cá nhân)',
+      ownerRoleVal: 'Chủ sở hữu cá nhân',
       securityLabel: 'Bảo vệ dữ liệu:',
       overviewHeading: 'Tổng quan Kho di sản',
       statusHeading: 'Trạng thái vận hành:',
@@ -159,11 +186,11 @@ export default function VaultOverviewPage({
         'Công cụ hỗ trợ kiểm thử các trạng thái giao diện trong môi trường phát triển (?preview=true).',
     },
     en: {
-      overviewEyebrow: 'ACTIVE HERITAGE VAULT',
+      overviewEyebrow: 'HERITAGE VAULT',
       vaultIdLabel: 'Vault ID:',
       createdLabel: 'Initialized:',
       ownerRoleLabel: 'Ownership:',
-      ownerRoleVal: 'Vault Owner (Exclusive Individual)',
+      ownerRoleVal: 'Personal Vault Owner',
       securityLabel: 'Data Protection:',
       overviewHeading: 'Heritage Sanctuary Overview',
       statusHeading: 'Operational Status:',
@@ -252,29 +279,15 @@ export default function VaultOverviewPage({
             {/* Left Column: Core Editorial Metadata (z-index: 2, crisp text and badges) */}
             <div className="lv-hero-content-col">
               <div className="lv-hero-top-row">
-                <span className="lv-hero-eyebrow">
-                  {t.overviewEyebrow}
+                <div className="lv-hero-eyebrow-wrap">
+                  <span className="lv-hero-eyebrow">{t.overviewEyebrow}</span>
                   {vault.isSimulation && (
-                    <span
-                      style={{
-                        marginLeft: '8px',
-                        fontSize: '10px',
-                        padding: '2px 8px',
-                        borderRadius: '9999px',
-                        background: 'rgba(197, 160, 89, 0.15)',
-                        border: '1px solid rgba(197, 160, 89, 0.4)',
-                        color: 'var(--lv-accent-gold, #c5a059)',
-                        fontWeight: 600,
-                        letterSpacing: '0.04em',
-                        display: 'inline-block',
-                      }}
-                    >
-                      {lang === 'en' ? 'SIMULATION' : 'DỮ LIỆU MÔ PHỎNG'}
+                    <span className="lv-sim-tag">
+                      {lang === 'en' ? 'Simulated Data' : 'Dữ liệu mô phỏng'}
                     </span>
                   )}
-                </span>
+                </div>
                 <div className="lv-hero-status-wrap">
-                  <span className="lv-hero-status-caption">{t.statusHeading}</span>
                   <StatusBadge status={vault.status || 'ACTIVE'} lang={lang} />
                 </div>
               </div>
@@ -288,7 +301,36 @@ export default function VaultOverviewPage({
               <div className="lv-vault-meta-grid">
                 <div className="lv-meta-item">
                   <span className="lv-meta-label">{t.vaultIdLabel}</span>
-                  <span className="lv-meta-value lv-mono">#VLT-000{vault.id}</span>
+                  <div className="lv-meta-id-wrap">
+                    <span
+                      className="lv-meta-value lv-mono"
+                      title={lang === 'en' ? `Full Vault ID: ${vault.id}` : `Mã kho đầy đủ: ${vault.id}`}
+                    >
+                      {formatVaultId(vault.id)}
+                    </span>
+                    <button
+                      type="button"
+                      className="lv-id-copy-btn"
+                      onClick={() => handleCopyId(vault.id)}
+                      title={
+                        copiedId
+                          ? (lang === 'en' ? 'Copied full ID!' : 'Đã sao chép mã đầy đủ!')
+                          : (lang === 'en' ? `Copy full ID: ${vault.id}` : `Sao chép mã đầy đủ: ${vault.id}`)
+                      }
+                      aria-label={lang === 'en' ? 'Copy full Vault ID' : 'Sao chép mã kho đầy đủ'}
+                    >
+                      {copiedId ? (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="lv-meta-item">
                   <span className="lv-meta-label">{t.createdLabel}</span>
