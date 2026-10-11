@@ -3,6 +3,7 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
+import SystemStatus from './SystemStatus'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -29,6 +30,10 @@ function App() {
           Count is {count}
         </button>
       </section>
+
+      <div className="ticks"></div>
+
+      <SystemStatus />
 
       <div className="ticks"></div>
 
