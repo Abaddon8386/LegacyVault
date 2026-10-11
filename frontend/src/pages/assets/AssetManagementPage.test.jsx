@@ -3,8 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AssetManagementPage } from './AssetManagementPage'
 import { translations } from '../../i18n/translations'
 import { assetService } from '../../services/assetService'
+import { assetMock } from '../../mocks/assetMock'
 
-describe('AssetManagementPage Focused UI Tests', () => {
+describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   const t = translations.vi
 
   beforeEach(() => {
@@ -14,24 +15,24 @@ describe('AssetManagementPage Focused UI Tests', () => {
 
   const mockAssets = [
     {
-      id: 'ast_1',
-      vaultId: 'vault_default',
-      name: 'Nhà phố Nguyễn Trãi',
-      category: 'REAL_ESTATE',
-      estimatedValue: 6000000000,
-      documentRef: 'GCN-12345',
-      description: 'Sổ đỏ chính chủ',
+      id: '11111111-1111-4111-8111-111111111111',
+      vaultId: '00000000-0000-0000-0000-000000000001',
+      name: 'Di chúc và tâm nguyện gia đình',
+      assetType: 'TEXT',
+      description: 'Ghi chú về phân định tài sản cho con cái',
+      hasPayload: true,
       createdAt: '2026-09-01T00:00:00Z',
+      updatedAt: '2026-09-01T00:00:00Z',
     },
     {
-      id: 'ast_2',
-      vaultId: 'vault_default',
-      name: 'Tài khoản Techcombank',
-      category: 'BANK_ACCOUNT',
-      estimatedValue: 200000000,
-      documentRef: 'STK-999',
-      description: 'Tiết kiệm',
+      id: '22222222-2222-4222-8222-222222222222',
+      vaultId: '00000000-0000-0000-0000-000000000001',
+      name: 'Mật khẩu ví lạnh Ledger',
+      assetType: 'CREDENTIAL',
+      description: 'Cụm từ phục hồi bí mật để trong két',
+      hasPayload: true,
       createdAt: '2026-09-10T00:00:00Z',
+      updatedAt: '2026-09-10T00:00:00Z',
     },
   ]
 
@@ -45,14 +46,14 @@ describe('AssetManagementPage Focused UI Tests', () => {
 
     // Wait for assets to render
     await waitFor(() => {
-      expect(screen.getAllByText('Nhà phố Nguyễn Trãi').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Tài khoản Techcombank').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
     })
 
     // Check Summary card values
-    expect(screen.getByText(t.assets.stats.totalValue)).toBeInTheDocument()
-    expect(screen.getByText('6.200.000.000 đ')).toBeInTheDocument()
     expect(screen.getByText(t.assets.stats.totalCount)).toBeInTheDocument()
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(t.assets.stats.securityStatus).length).toBeGreaterThan(0)
 
     // Business rule banner check
     expect(
@@ -77,7 +78,9 @@ describe('AssetManagementPage Focused UI Tests', () => {
     expect(screen.queryByText(t.assets.noticeDismiss)).not.toBeInTheDocument()
 
     // Info pill button should be visible next to title
-    expect(screen.getByRole('button', { name: new RegExp(t.assets.noticeInfoTooltip, 'i') })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: new RegExp(t.assets.noticeInfoTooltip, 'i') })
+    ).toBeInTheDocument()
   })
 
   it('filters assets by search keyword', async () => {
@@ -86,17 +89,30 @@ describe('AssetManagementPage Focused UI Tests', () => {
     render(<AssetManagementPage t={t} />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Nhà phố Nguyễn Trãi').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
     })
 
     const searchInput = screen.getByPlaceholderText(t.assets.searchPlaceholder)
-    fireEvent.change(searchInput, { target: { value: 'Techcombank' } })
+    fireEvent.change(searchInput, { target: { value: 'Ledger' } })
 
-    expect(screen.getAllByText('Tài khoản Techcombank').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Nhà phố Nguyễn Trãi')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Di chúc và tâm nguyện gia đình')).not.toBeInTheDocument()
+  })
 
-    // Summary cards reflect filtered values
-    expect(screen.getAllByText('200.000.000 đ').length).toBeGreaterThan(0)
+  it('filters assets by assetType (TEXT vs CREDENTIAL)', async () => {
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+
+    render(<AssetManagementPage t={t} />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
+    })
+
+    const typeSelect = screen.getByLabelText(t.assets.filterAria)
+    fireEvent.change(typeSelect, { target: { value: 'CREDENTIAL' } })
+
+    expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Di chúc và tâm nguyện gia đình')).not.toBeInTheDocument()
   })
 
   it('validates required fields before allowing asset creation', async () => {
@@ -105,7 +121,7 @@ describe('AssetManagementPage Focused UI Tests', () => {
     render(<AssetManagementPage t={t} />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Nhà phố Nguyễn Trãi').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
     })
 
     // Open Add Modal
@@ -118,29 +134,38 @@ describe('AssetManagementPage Focused UI Tests', () => {
     const submitBtn = screen.getByRole('button', { name: t.assets.addModal.submitBtn })
     fireEvent.click(submitBtn)
 
-    // Expect validation errors
+    // Expect validation errors for required contract fields
     expect(screen.getByText(t.assets.validation.nameRequired)).toBeInTheDocument()
-    expect(screen.getByText(t.assets.validation.categoryRequired)).toBeInTheDocument()
+    expect(screen.getByText(t.assets.validation.typeRequired)).toBeInTheDocument()
+    expect(screen.getByText(t.assets.validation.payloadRequired)).toBeInTheDocument()
+
+    // Non-blank short name (e.g. 1-2 chars) is valid (no min-3 requirement)
+    const nameInput = screen.getByPlaceholderText(t.assets.addModal.namePlaceholder)
+    fireEvent.change(nameInput, { target: { value: 'AB' } })
+    fireEvent.click(submitBtn)
+    expect(screen.queryByText(t.assets.validation.nameRequired)).not.toBeInTheDocument()
   })
 
-  it('successfully creates a new asset and displays it in list', async () => {
+  it('creates asset with write-only payload and ensures payload is not in DOM or localStorage', async () => {
     vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+
+    const secretPassword = 'SUPER_CONFIDENTIAL_KEY_987654321'
     const newMockAsset = {
-      id: 'ast_3',
-      vaultId: 'vault_default',
-      name: 'Xe VinFast VF9',
-      category: 'VEHICLE',
-      estimatedValue: 1500000000,
-      documentRef: 'DK-51A',
-      description: 'Xe gia đình',
-      createdAt: '2026-10-11T00:00:00Z',
+      id: '33333333-3333-4333-8333-333333333333',
+      vaultId: '00000000-0000-0000-0000-000000000001',
+      name: 'Khóa API Server Bí Mật',
+      assetType: 'CREDENTIAL',
+      description: 'API Key giao dịch số',
+      hasPayload: true,
+      createdAt: '2026-10-12T00:00:00Z',
+      updatedAt: '2026-10-12T00:00:00Z',
     }
     vi.spyOn(assetService, 'createAsset').mockResolvedValue(newMockAsset)
 
     render(<AssetManagementPage t={t} />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Nhà phố Nguyễn Trãi').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
     })
 
     // Open Add Modal
@@ -149,17 +174,39 @@ describe('AssetManagementPage Focused UI Tests', () => {
 
     // Fill form
     const nameInput = screen.getByPlaceholderText(t.assets.addModal.namePlaceholder)
-    const categorySelect = document.getElementById('asset-category')
+    const typeSelect = document.getElementById('asset-type')
+    const payloadInput = screen.getByPlaceholderText(t.assets.addModal.payloadPlaceholder)
+    const descInput = screen.getByPlaceholderText(t.assets.addModal.descriptionPlaceholder)
 
-    fireEvent.change(nameInput, { target: { value: 'Xe VinFast VF9' } })
-    fireEvent.change(categorySelect, { target: { value: 'VEHICLE' } })
+    fireEvent.change(nameInput, { target: { value: 'Khóa API Server Bí Mật' } })
+    fireEvent.change(typeSelect, { target: { value: 'CREDENTIAL' } })
+    fireEvent.change(payloadInput, { target: { value: secretPassword } })
+    fireEvent.change(descInput, { target: { value: 'API Key giao dịch số' } })
 
     const submitBtn = screen.getByRole('button', { name: t.assets.addModal.submitBtn })
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Xe VinFast VF9').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Khóa API Server Bí Mật').length).toBeGreaterThan(0)
     })
+
+    // Verify plaintext secret is NEVER rendered anywhere in the DOM
+    expect(screen.queryByText(secretPassword)).not.toBeInTheDocument()
+
+    // Test assetMock directly to verify plaintext payload is discarded and NOT saved to localStorage
+    const createdByMock = await assetMock.createAsset({
+      name: 'Mật mã thực tế',
+      assetType: 'TEXT',
+      description: 'Ghi chú',
+      payload: 'SECRET_NEVER_SAVED_PLAINTEXT',
+    })
+
+    expect(createdByMock.hasPayload).toBe(true)
+    expect(createdByMock.payload).toBeUndefined()
+
+    // Inspect localStorage string
+    const rawStorage = localStorage.getItem('legacyvault_mock_assets_v2') || ''
+    expect(rawStorage).not.toContain('SECRET_NEVER_SAVED_PLAINTEXT')
   })
 
   it('handles error state gracefully with retry button', async () => {
@@ -173,6 +220,8 @@ describe('AssetManagementPage Focused UI Tests', () => {
     })
 
     // Ensure retry button is available
-    expect(screen.getByRole('button', { name: new RegExp(t.assets.alerts.retryBtn, 'i') })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: new RegExp(t.assets.alerts.retryBtn, 'i') })
+    ).toBeInTheDocument()
   })
 })

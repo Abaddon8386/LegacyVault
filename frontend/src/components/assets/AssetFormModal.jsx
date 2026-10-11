@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Button } from '../common/Button'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Lock } from 'lucide-react'
 import './AssetFormModal.css'
 
 /**
- * AssetFormModal — PS-5: Add asset only.
+ * AssetFormModal — PS-5: Add asset only (Contract Aligned).
+ * Fields: name, assetType (TEXT | CREDENTIAL), description, payload (write-only).
  * Validates required fields before submission. No sensitive data logged.
  */
 export function AssetFormModal({
@@ -16,10 +17,9 @@ export function AssetFormModal({
 }) {
   const emptyForm = {
     name: '',
-    category: '',
-    estimatedValue: '',
-    documentRef: '',
+    assetType: '',
     description: '',
+    payload: '',
   }
 
   const [formData, setFormData] = useState(emptyForm)
@@ -27,25 +27,24 @@ export function AssetFormModal({
 
   function validate() {
     const errs = {}
-    if (!formData.name.trim()) {
+    const trimmedName = formData.name.trim()
+
+    if (!trimmedName) {
       errs.name = t.assets.validation.nameRequired
-    } else if (formData.name.trim().length < 3) {
-      errs.name = t.assets.validation.nameMin
+    } else if (trimmedName.length > 150) {
+      errs.name = t.assets.validation.nameMax
     }
 
-    if (!formData.category) {
-      errs.category = t.assets.validation.categoryRequired
+    if (!formData.assetType || !['TEXT', 'CREDENTIAL'].includes(formData.assetType)) {
+      errs.assetType = t.assets.validation.typeRequired
     }
 
-    if (formData.estimatedValue) {
-      const num = Number(formData.estimatedValue)
-      if (isNaN(num) || num < 0) {
-        errs.estimatedValue = t.assets.validation.valueInvalid
-      }
+    if (formData.description && formData.description.length > 1000) {
+      errs.description = t.assets.validation.descMax
     }
 
-    if (formData.documentRef && /[<>{}]/.test(formData.documentRef)) {
-      errs.documentRef = t.assets.validation.documentRefInvalid
+    if (!formData.payload || !formData.payload.trim()) {
+      errs.payload = t.assets.validation.payloadRequired
     }
 
     setErrors(errs)
@@ -64,11 +63,10 @@ export function AssetFormModal({
     if (!validate()) return
 
     onSubmit({
-      name: formData.name,
-      category: formData.category,
-      estimatedValue: formData.estimatedValue ? Number(formData.estimatedValue) : null,
-      documentRef: formData.documentRef,
-      description: formData.description,
+      name: formData.name.trim(),
+      assetType: formData.assetType,
+      description: formData.description.trim(),
+      payload: formData.payload.trim(),
     })
   }
 
@@ -80,13 +78,9 @@ export function AssetFormModal({
 
   if (!isOpen) return null
 
-  const categories = [
-    { value: 'REAL_ESTATE', label: t.assets.types.REAL_ESTATE },
-    { value: 'BANK_ACCOUNT', label: t.assets.types.BANK_ACCOUNT },
-    { value: 'VEHICLE', label: t.assets.types.VEHICLE },
-    { value: 'SECURITIES', label: t.assets.types.SECURITIES },
-    { value: 'PRECIOUS_ITEM', label: t.assets.types.PRECIOUS_ITEM },
-    { value: 'OTHER', label: t.assets.types.OTHER },
+  const assetTypes = [
+    { value: 'TEXT', label: t.assets.types.TEXT },
+    { value: 'CREDENTIAL', label: t.assets.types.CREDENTIAL },
   ]
 
   return (
@@ -124,6 +118,7 @@ export function AssetFormModal({
             <input
               id="asset-name"
               type="text"
+              maxLength={150}
               className={`lv-form-input ${errors.name ? 'lv-form-input--error' : ''}`}
               placeholder={t.assets.addModal.namePlaceholder}
               value={formData.name}
@@ -137,79 +132,59 @@ export function AssetFormModal({
             )}
           </div>
 
-          {/* Asset Category */}
+          {/* Asset Type (TEXT | CREDENTIAL) */}
           <div className="lv-form-group">
-            <label htmlFor="asset-category" className="lv-form-label">
-              {t.assets.addModal.categoryLabel} <span className="lv-required">*</span>
+            <label htmlFor="asset-type" className="lv-form-label">
+              {t.assets.addModal.typeLabel} <span className="lv-required">*</span>
             </label>
             <select
-              id="asset-category"
-              className={`lv-form-select ${errors.category ? 'lv-form-input--error' : ''}`}
-              value={formData.category}
-              onChange={(e) => handleChange('category', e.target.value)}
+              id="asset-type"
+              className={`lv-form-select ${errors.assetType ? 'lv-form-input--error' : ''}`}
+              value={formData.assetType}
+              onChange={(e) => handleChange('assetType', e.target.value)}
               disabled={isSubmitting}
             >
-              <option value="">{t.assets.addModal.categoryPlaceholder}</option>
-              {categories.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
+              <option value="">{t.assets.addModal.typePlaceholder}</option>
+              {assetTypes.map((tItem) => (
+                <option key={tItem.value} value={tItem.value}>
+                  {tItem.label}
                 </option>
               ))}
             </select>
-            {errors.category && (
+            {errors.assetType && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.category}
+                <AlertCircle size={14} /> {errors.assetType}
               </p>
             )}
           </div>
 
-          {/* Two-column layout for value and doc reference */}
-          <div className="lv-form-row">
-            <div className="lv-form-group">
-              <label htmlFor="asset-value" className="lv-form-label">
-                {t.assets.addModal.valueLabel}
-              </label>
-              <input
-                id="asset-value"
-                type="number"
-                min="0"
-                step="1000000"
-                className={`lv-form-input ${errors.estimatedValue ? 'lv-form-input--error' : ''}`}
-                placeholder={t.assets.addModal.valuePlaceholder}
-                value={formData.estimatedValue}
-                onChange={(e) => handleChange('estimatedValue', e.target.value)}
-                disabled={isSubmitting}
-              />
-              {errors.estimatedValue && (
-                <p className="lv-form-error" role="alert">
-                  <AlertCircle size={14} /> {errors.estimatedValue}
-                </p>
-              )}
-              <span className="lv-form-hint">{t.assets.addModal.valueHint}</span>
-            </div>
-
-            <div className="lv-form-group">
-              <label htmlFor="asset-doc" className="lv-form-label">
-                {t.assets.addModal.documentRefLabel}
-              </label>
-              <input
-                id="asset-doc"
-                type="text"
-                className={`lv-form-input ${errors.documentRef ? 'lv-form-input--error' : ''}`}
-                placeholder={t.assets.addModal.documentRefPlaceholder}
-                value={formData.documentRef}
-                onChange={(e) => handleChange('documentRef', e.target.value)}
-                disabled={isSubmitting}
-              />
-              {errors.documentRef && (
-                <p className="lv-form-error" role="alert">
-                  <AlertCircle size={14} /> {errors.documentRef}
-                </p>
-              )}
-            </div>
+          {/* Confidential Payload (Write-Only) */}
+          <div className="lv-form-group">
+            <label htmlFor="asset-payload" className="lv-form-label">
+              {t.assets.addModal.payloadLabel} <span className="lv-required">*</span>
+            </label>
+            <textarea
+              id="asset-payload"
+              rows={4}
+              className={`lv-form-textarea ${errors.payload ? 'lv-form-input--error' : ''}`}
+              placeholder={t.assets.addModal.payloadPlaceholder}
+              value={formData.payload}
+              onChange={(e) => handleChange('payload', e.target.value)}
+              disabled={isSubmitting}
+            />
+            {errors.payload ? (
+              <p className="lv-form-error" role="alert">
+                <AlertCircle size={14} /> {errors.payload}
+              </p>
+            ) : (
+              <span className="lv-form-hint">
+                <Lock size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+                {t.assets.addModal.payloadHint}
+              </span>
+            )}
           </div>
 
-          {/* Description / Notes */}
+          {/* Description (Optional, max 1000) */}
           <div className="lv-form-group">
             <label htmlFor="asset-desc" className="lv-form-label">
               {t.assets.addModal.descriptionLabel}
@@ -217,12 +192,18 @@ export function AssetFormModal({
             <textarea
               id="asset-desc"
               rows={3}
-              className="lv-form-textarea"
+              maxLength={1000}
+              className={`lv-form-textarea ${errors.description ? 'lv-form-input--error' : ''}`}
               placeholder={t.assets.addModal.descriptionPlaceholder}
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               disabled={isSubmitting}
             />
+            {errors.description && (
+              <p className="lv-form-error" role="alert">
+                <AlertCircle size={14} /> {errors.description}
+              </p>
+            )}
           </div>
 
           {/* Actions */}

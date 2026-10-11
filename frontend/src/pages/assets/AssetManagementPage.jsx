@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { assetService } from '../../services/assetService'
+import { DEFAULT_MOCK_VAULT_ID } from '../../mocks/assetMock'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { AssetListTable } from '../../components/assets/AssetListTable'
@@ -21,16 +22,16 @@ import './AssetManagementPage.css'
 const LEGAL_DISMISSED_KEY = 'legacyvault_legal_notice_dismissed'
 
 /**
- * AssetManagementPage — PS-5: Add asset + view asset list.
+ * AssetManagementPage — PS-5: Add asset + view asset list (Contract Aligned).
  * Loads assets on mount, shows loading/error/empty states.
- * Allows adding a new asset via a validated form modal.
+ * Allows adding a new asset via a validated form modal with write-only payload.
  */
 export function AssetManagementPage({ t }) {
   const [assets, setAssets] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const [selectedAssetType, setSelectedAssetType] = useState('ALL')
 
   // Add modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -58,7 +59,7 @@ export function AssetManagementPage({ t }) {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await assetService.getAssets('vault_default')
+      const data = await assetService.getAssets(DEFAULT_MOCK_VAULT_ID)
       setAssets(data)
     } catch {
       setError(t.assets.alerts.loadError)
@@ -71,7 +72,7 @@ export function AssetManagementPage({ t }) {
     let isMounted = true
     async function fetchInitialData() {
       try {
-        const data = await assetService.getAssets('vault_default')
+        const data = await assetService.getAssets(DEFAULT_MOCK_VAULT_ID)
         if (isMounted) {
           setAssets(data)
           setIsLoading(false)
@@ -101,7 +102,7 @@ export function AssetManagementPage({ t }) {
   async function handleAddAsset(formData) {
     setIsSubmitting(true)
     try {
-      const created = await assetService.createAsset(formData)
+      const created = await assetService.createAsset(DEFAULT_MOCK_VAULT_ID, formData)
       setAssets((prev) => [created, ...prev])
       setIsAddModalOpen(false)
       showToast(t.assets.alerts.addSuccess, 'success')
@@ -112,20 +113,19 @@ export function AssetManagementPage({ t }) {
     }
   }
 
-  // TODO(mock): Client-side filtering is temporary; backend will handle search/filter via query parameters.
+  // Client-side filtering by assetType and searching by name/description
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
-      const matchesCategory =
-        selectedCategory === 'ALL' || asset.category === selectedCategory
+      const matchesType =
+        selectedAssetType === 'ALL' || asset.assetType === selectedAssetType
       const query = searchQuery.toLowerCase().trim()
       const matchesQuery =
         !query ||
-        asset.name.toLowerCase().includes(query) ||
-        (asset.documentRef && asset.documentRef.toLowerCase().includes(query)) ||
+        (asset.name && asset.name.toLowerCase().includes(query)) ||
         (asset.description && asset.description.toLowerCase().includes(query))
-      return matchesCategory && matchesQuery
+      return matchesType && matchesQuery
     })
-  }, [assets, selectedCategory, searchQuery])
+  }, [assets, selectedAssetType, searchQuery])
 
   const hasAnyAssets = assets.length > 0
   const isSearchNoResults = hasAnyAssets && filteredAssets.length === 0
@@ -218,17 +218,13 @@ export function AssetManagementPage({ t }) {
           <Filter size={15} className="lv-filter-icon" />
           <select
             className="lv-category-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={selectedAssetType}
+            onChange={(e) => setSelectedAssetType(e.target.value)}
             aria-label={t.assets.filterAria}
           >
             <option value="ALL">{t.assets.filterAll}</option>
-            <option value="REAL_ESTATE">{t.assets.types.REAL_ESTATE}</option>
-            <option value="BANK_ACCOUNT">{t.assets.types.BANK_ACCOUNT}</option>
-            <option value="VEHICLE">{t.assets.types.VEHICLE}</option>
-            <option value="SECURITIES">{t.assets.types.SECURITIES}</option>
-            <option value="PRECIOUS_ITEM">{t.assets.types.PRECIOUS_ITEM}</option>
-            <option value="OTHER">{t.assets.types.OTHER}</option>
+            <option value="TEXT">{t.assets.types.TEXT}</option>
+            <option value="CREDENTIAL">{t.assets.types.CREDENTIAL}</option>
           </select>
         </div>
       </div>
@@ -273,7 +269,7 @@ export function AssetManagementPage({ t }) {
               variant="secondary"
               onClick={() => {
                 setSearchQuery('')
-                setSelectedCategory('ALL')
+                setSelectedAssetType('ALL')
               }}
             >
               {t.assets.clearFilter}
