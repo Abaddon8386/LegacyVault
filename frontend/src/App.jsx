@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import TrusteeBeneficiaryPage from './pages/trusteeBeneficiary/TrusteeBeneficiaryPage.jsx';
 
-function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
+function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateToTrusteeBeneficiary }) {
   return (
     <main
       style={{
@@ -20,7 +21,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
     >
       <div
         style={{
-          maxWidth: '480px',
+          maxWidth: '520px',
           width: '100%',
           backgroundColor: '#ffffff',
           borderRadius: '16px',
@@ -84,7 +85,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
               color: '#ffffff',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 24px',
+              padding: '12px 20px',
               borderRadius: '10px',
               border: 'none',
               cursor: 'pointer',
@@ -106,7 +107,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
               color: '#164639',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 24px',
+              padding: '12px 20px',
               borderRadius: '10px',
               border: '1px solid #ded9ce',
               cursor: 'pointer',
@@ -114,6 +115,27 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
             }}
           >
             <span>Đến trang Đăng nhập</span>
+          </button>
+          <button
+            type="button"
+            onClick={onNavigateToTrusteeBeneficiary}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              backgroundColor: '#164639',
+              color: '#ffffff',
+              fontWeight: 600,
+              fontSize: '14px',
+              padding: '12px 20px',
+              borderRadius: '10px',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s ease',
+            }}
+          >
+            <span>Người giám hộ & Thụ hưởng</span>
           </button>
         </div>
       </div>
@@ -139,9 +161,14 @@ export default function App() {
     setCurrentPath(path);
   };
 
-  // Các route hợp lệ cho PS-1 & PS-2
+  // Các route hợp lệ
   const isRegisterRoute = currentPath === '/register' || currentPath === '/';
   const isLoginRoute = currentPath === '/login';
+  const isTrusteeBeneficiaryRoute =
+    currentPath === '/trustee-beneficiary' ||
+    currentPath === '/trustees' ||
+    currentPath === '/beneficiaries' ||
+    currentPath === '/recipients';
 
   return (
     <div className="lv-app-root">
@@ -149,10 +176,16 @@ export default function App() {
         <RegisterPageHenedo onNavigateToLogin={() => navigateTo('/login')} />
       ) : isLoginRoute ? (
         <LoginPage onNavigateToRegister={() => navigateTo('/register')} />
+      ) : isTrusteeBeneficiaryRoute ? (
+        <TrusteeBeneficiaryPage
+          onNavigateToLogin={() => navigateTo('/login')}
+          onNavigateToRegister={() => navigateTo('/register')}
+        />
       ) : (
         <NotFoundFallback
           onNavigateToRegister={() => navigateTo('/register')}
           onNavigateToLogin={() => navigateTo('/login')}
+          onNavigateToTrusteeBeneficiary={() => navigateTo('/trustee-beneficiary')}
         />
       )}
     </div>
