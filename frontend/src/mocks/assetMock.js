@@ -1,5 +1,5 @@
 /**
- * Mock data and storage simulation for Assets (PS-5 Contract Alignment).
+ * Mock data and storage simulation for Assets (PS-5 & PS-6 Contract Alignment).
  * All mock data and simulation logic belong strictly in src/mocks/.
  *
  * NOTE: Fields strictly align with the current Asset API Contract (AssetResponse):
@@ -94,8 +94,25 @@ export const assetMock = {
   async getAssets(vaultId = DEFAULT_MOCK_VAULT_ID) {
     await new Promise((resolve) => setTimeout(resolve, 350))
     const all = getStoredAssets()
-    // TODO(mock): Vault filtering will be handled by backend API
     return all.filter((item) => !vaultId || item.vaultId === vaultId)
+  },
+
+  /**
+   * Mock getAssetById with simulated latency.
+   * @param {string} vaultId - Vault UUID
+   * @param {string} assetId - Asset UUID
+   * @returns {Promise<Object>} AssetResponse (no payload included)
+   */
+  async getAssetById(vaultId = DEFAULT_MOCK_VAULT_ID, assetId) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    const all = getStoredAssets()
+    const found = all.find(
+      (item) => item.id === assetId && (!vaultId || item.vaultId === vaultId)
+    )
+    if (!found) {
+      throw new Error(`Asset not found: ${assetId}`)
+    }
+    return { ...found }
   },
 
   /**
@@ -128,5 +145,56 @@ export const assetMock = {
     saveStoredAssets([newAsset, ...current])
 
     return newAsset
+  },
+
+  /**
+   * Mock updateAsset with simulated latency and storage.
+   * Updates only valid fields (name, description, payload).
+   * Refreshes updatedAt. Never stores plaintext payload.
+   *
+   * @param {string} vaultId - Vault UUID
+   * @param {string} assetId - Asset UUID
+   * @param {Object} patchData - { name?, description?, payload? }
+   * @returns {Promise<Object>} Updated AssetResponse
+   */
+  async updateAsset(vaultId = DEFAULT_MOCK_VAULT_ID, assetId, patchData) {
+    await new Promise((resolve) => setTimeout(resolve, 350))
+
+    const all = getStoredAssets()
+    const index = all.findIndex(
+      (item) => item.id === assetId && (!vaultId || item.vaultId === vaultId)
+    )
+    if (index === -1) {
+      throw new Error(`Asset not found: ${assetId}`)
+    }
+
+    const current = all[index]
+    const now = new Date().toISOString()
+
+    let newHasPayload = current.hasPayload
+    if (patchData.payload !== undefined && patchData.payload !== null) {
+      const trimmed = String(patchData.payload).trim()
+      if (trimmed.length > 0) {
+        newHasPayload = true
+      }
+    }
+
+    const updatedAsset = {
+      ...current,
+      name: patchData.name !== undefined ? patchData.name.trim() : current.name,
+      description:
+        patchData.description !== undefined
+          ? patchData.description.trim()
+          : current.description,
+      hasPayload: newHasPayload,
+      updatedAt: now,
+    }
+
+    // Discard any payload before saving to storage
+    const nextList = [...all]
+    nextList[index] = updatedAsset
+    saveStoredAssets(nextList)
+
+    return { ...updatedAsset }
   },
 }

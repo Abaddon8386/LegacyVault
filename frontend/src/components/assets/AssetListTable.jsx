@@ -10,16 +10,18 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  Eye,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '../common/Button'
 import './AssetListTable.css'
 
 /**
- * AssetListTable — PS-5: List assets only (Contract Aligned).
+ * AssetListTable — PS-5 & PS-6 (Contract Aligned).
  * Displays contract metadata: name, assetType (TEXT | CREDENTIAL), hasPayload, createdAt.
- * Supports sorting and pagination.
+ * Supports sorting, pagination, View Asset detail, and Edit Asset actions.
  */
-export function AssetListTable({ assets, t }) {
+export function AssetListTable({ assets, t, onViewAsset, onEditAsset }) {
   // Sorting state
   const [sortField, setSortField] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState('desc')
@@ -131,6 +133,10 @@ export function AssetListTable({ assets, t }) {
                   {renderSortIcon('createdAt')}
                 </div>
               </th>
+
+              <th scope="col" className="lv-th-center">
+                {t.assets.colActions}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -182,6 +188,30 @@ export function AssetListTable({ assets, t }) {
                       {formatDate(asset.createdAt)}
                     </span>
                   </td>
+
+                  <td className="lv-td-center lv-td-action" onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="lv-action-more-btn"
+                        onClick={() => onViewAsset && onViewAsset(asset)}
+                        title={t.assets.actions.viewDetail}
+                        aria-label={t.assets.actions.viewDetail}
+                      >
+                        <Eye size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="lv-action-more-btn"
+                        onClick={() => onEditAsset && onEditAsset(asset)}
+                        title={t.assets.actions.edit}
+                        aria-label={t.assets.actions.edit}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               )
             })}
@@ -205,6 +235,28 @@ export function AssetListTable({ assets, t }) {
                   <span className="lv-mobile-card__name" title={asset.name}>
                     {asset.name}
                   </span>
+                </div>
+
+                <div style={{ display: 'inline-flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    className="lv-action-more-btn"
+                    onClick={() => onViewAsset && onViewAsset(asset)}
+                    title={t.assets.actions.viewDetail}
+                    aria-label={t.assets.actions.viewDetail}
+                  >
+                    <Eye size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="lv-action-more-btn"
+                    onClick={() => onEditAsset && onEditAsset(asset)}
+                    title={t.assets.actions.edit}
+                    aria-label={t.assets.actions.edit}
+                  >
+                    <Pencil size={16} />
+                  </button>
                 </div>
               </div>
 

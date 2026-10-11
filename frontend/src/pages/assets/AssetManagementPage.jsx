@@ -17,14 +17,18 @@ import { Modal } from '../../components/common/Modal'
 import { AssetListTable } from '../../components/assets/AssetListTable'
 import { AssetFormModal } from '../../components/assets/AssetFormModal'
 import { AssetSummaryCards } from '../../components/assets/AssetSummaryCards'
+import { AssetDetailModal } from '../../components/assets/AssetDetailModal'
+import { AssetEditModal } from '../../components/assets/AssetEditModal'
 import './AssetManagementPage.css'
 
 const LEGAL_DISMISSED_KEY = 'legacyvault_legal_notice_dismissed'
 
 /**
- * AssetManagementPage — PS-5: Add asset + view asset list (Contract Aligned).
- * Loads assets on mount, shows loading/error/empty states.
- * Allows adding a new asset via a validated form modal with write-only payload.
+ * AssetManagementPage — PS-5 & PS-6: Add, List, View, and Edit Assets (Contract Aligned).
+ *
+ * PS-6 Capabilities:
+ * - View Asset Detail (GET /vaults/{vaultId}/assets/{assetId})
+ * - Edit Asset (PATCH /vaults/{vaultId}/assets/{assetId})
  */
 export function AssetManagementPage({ t }) {
   const [assets, setAssets] = useState([])
@@ -37,6 +41,13 @@ export function AssetManagementPage({ t }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toastMessage, setToastMessage] = useState(null)
+
+  // PS-6 View modal state
+  const [viewingAsset, setViewingAsset] = useState(null)
+
+  // PS-6 Edit modal state
+  const [editingAsset, setEditingAsset] = useState(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // Legal Notice collapsible behavior
   const [isLegalDismissed, setIsLegalDismissed] = useState(() => {
@@ -110,6 +121,41 @@ export function AssetManagementPage({ t }) {
       showToast(t.assets.alerts.saveError, 'error')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // PS-6 View Asset detail handler
+  async function handleViewAsset(asset) {
+    try {
+      const detail = await assetService.getAssetById(DEFAULT_MOCK_VAULT_ID, asset.id)
+      setViewingAsset(detail)
+    } catch {
+      // Fallback to existing asset object if network fetch fails
+      setViewingAsset(asset)
+    }
+  }
+
+  // PS-6 Edit Asset open handler
+  function handleOpenEdit(asset) {
+    setEditingAsset(asset)
+  }
+
+  // PS-6 Update Asset submit handler
+  async function handleUpdateAsset(assetId, patchData) {
+    setIsUpdating(true)
+    try {
+      const updated = await assetService.updateAsset(
+        DEFAULT_MOCK_VAULT_ID,
+        assetId,
+        patchData
+      )
+      setAssets((prev) => prev.map((a) => (a.id === assetId ? updated : a)))
+      setEditingAsset(null)
+      showToast(t.assets.alerts.editSuccess, 'success')
+    } catch {
+      showToast(t.assets.alerts.editError, 'error')
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -281,7 +327,12 @@ export function AssetManagementPage({ t }) {
           </div>
         </div>
       ) : (
-        <AssetListTable assets={filteredAssets} t={t} />
+        <AssetListTable
+          assets={filteredAssets}
+          t={t}
+          onViewAsset={handleViewAsset}
+          onEditAsset={handleOpenEdit}
+        />
       )}
 
       {/* Floating Action Button for mobile */}
@@ -318,6 +369,24 @@ export function AssetManagementPage({ t }) {
         onSubmit={handleAddAsset}
         t={t}
         isSubmitting={isSubmitting}
+      />
+
+      {/* PS-6 View Asset Detail Modal */}
+      <AssetDetailModal
+        isOpen={!!viewingAsset}
+        onClose={() => setViewingAsset(null)}
+        asset={viewingAsset}
+        t={t}
+      />
+
+      {/* PS-6 Edit Asset Modal */}
+      <AssetEditModal
+        isOpen={!!editingAsset}
+        onClose={() => setEditingAsset(null)}
+        asset={editingAsset}
+        onSubmit={handleUpdateAsset}
+        t={t}
+        isSubmitting={isUpdating}
       />
     </div>
   )
