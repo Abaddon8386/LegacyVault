@@ -1,0 +1,387 @@
+.lv-asset-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+}
+
+/* Toast */
+.lv-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: var(--lv-radius-control);
+  font-size: 13.5px;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  animation: lv-slide-up 200ms ease;
+}
+
+.lv-toast--success {
+  background-color: var(--lv-brand-forest);
+  color: #ffffff;
+}
+
+.lv-toast--error {
+  background-color: var(--lv-danger);
+  color: #ffffff;
+}
+
+/* Page Header */
+.lv-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.lv-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lv-page-title {
+  font-family: var(--lv-font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--lv-brand-forest);
+  line-height: 1.25;
+}
+
+/* ⓘ Info pill button next to title when notice collapsed (Item 2) */
+.lv-info-pill-btn {
+  background-color: #faf5eb;
+  border: 1px solid #ebd9b5;
+  color: #8c6820;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--lv-transition-fast);
+}
+
+.lv-info-pill-btn:hover {
+  background-color: var(--lv-accent-gold);
+  color: #ffffff;
+  border-color: var(--lv-accent-gold);
+}
+
+.lv-page-subtitle {
+  font-size: 14px;
+  color: var(--lv-text-muted);
+  margin-top: 4px;
+}
+
+/* Legal Notice Banner (Collapsible with "Đã hiểu" button - Item 2) */
+.lv-legal-notice-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background-color: #faf5eb;
+  border: 1px solid #ebd9b5;
+  border-radius: var(--lv-radius-control);
+  color: #7d5b1e;
+  font-size: 13px;
+  line-height: 1.45;
+  animation: lv-slide-down 200ms ease;
+}
+
+.lv-legal-notice-banner__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lv-notice-icon {
+  flex-shrink: 0;
+  color: var(--lv-accent-gold);
+}
+
+.lv-legal-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--lv-radius-sm);
+  border: 1px solid #d8c299;
+  background-color: #ffffff;
+  color: #7d5b1e;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--lv-transition-fast);
+}
+
+.lv-legal-dismiss-btn:hover {
+  background-color: #f5ece0;
+  color: #5f4210;
+}
+
+.lv-legal-modal-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  background-color: #faf5eb;
+  border-radius: var(--lv-radius-control);
+  border: 1px solid #ebd9b5;
+  color: #7d5b1e;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Filter and Search Bar (Item 7: Stacked on mobile) */
+.lv-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lv-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.lv-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--lv-text-light);
+}
+
+.lv-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border-radius: var(--lv-radius-control);
+  border: 1px solid var(--lv-border-subtle);
+  background-color: var(--lv-bg-surface);
+  color: var(--lv-text-ink);
+  font-size: 14px;
+  outline: none;
+  transition: all var(--lv-transition-fast);
+}
+
+.lv-search-input:focus {
+  border-color: var(--lv-accent-gold);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.2);
+}
+
+.lv-category-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lv-filter-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--lv-text-light);
+  pointer-events: none;
+}
+
+.lv-category-select {
+  padding: 10px 14px 10px 34px;
+  border-radius: var(--lv-radius-control);
+  border: 1px solid var(--lv-border-subtle);
+  background-color: var(--lv-bg-surface);
+  color: var(--lv-text-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lv-category-select:focus {
+  border-color: var(--lv-accent-gold);
+}
+
+/* States: Loading, Error, Empty */
+.lv-loading-card {
+  padding: 64px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background-color: var(--lv-bg-surface);
+  border-radius: var(--lv-radius-card);
+  border: 1px solid var(--lv-border-subtle);
+  color: var(--lv-text-muted);
+  font-size: 14px;
+}
+
+.lv-skeleton-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--lv-border-subtle);
+  border-top-color: var(--lv-brand-forest);
+  border-radius: 50%;
+  animation: lv-spin 0.7s linear infinite;
+}
+
+.lv-error-card {
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  background-color: var(--lv-bg-surface);
+  border-radius: var(--lv-radius-card);
+  border: 1px solid var(--lv-border-subtle);
+}
+
+.lv-error-icon {
+  color: var(--lv-danger);
+}
+
+.lv-error-card h3 {
+  font-size: 18px;
+  color: var(--lv-danger);
+}
+
+.lv-error-card p {
+  color: var(--lv-text-muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.lv-empty-card {
+  padding: 64px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  background-color: var(--lv-bg-surface);
+  border-radius: var(--lv-radius-card);
+  border: 1px dashed #d5d0c4;
+}
+
+.lv-empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #faf8f5;
+  color: var(--lv-accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lv-empty-title {
+  font-family: var(--lv-font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--lv-brand-forest);
+}
+
+.lv-empty-desc {
+  max-width: 440px;
+  color: var(--lv-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.lv-empty-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Floating Action Button for mobile <= 640px (Item 7) */
+.lv-mobile-fab {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: var(--lv-brand-forest);
+  color: var(--lv-accent-gold);
+  border: none;
+  box-shadow: 0 8px 20px rgba(22, 70, 57, 0.35);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1050;
+  transition: transform var(--lv-transition-fast);
+}
+
+.lv-mobile-fab:active {
+  transform: scale(0.95);
+}
+
+/* RESPONSIVE (Item 7) */
+@media (max-width: 640px) {
+  .lv-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .lv-category-select {
+    width: 100%;
+  }
+
+  .lv-category-filter {
+    width: 100%;
+  }
+
+  /* Shrink header Add button to icon-only or hide in favor of FAB */
+  .lv-add-btn__text {
+    display: none;
+  }
+
+  .lv-add-btn {
+    padding: 10px;
+    border-radius: 50%;
+  }
+
+  .lv-mobile-fab {
+    display: flex;
+  }
+}
+
+@keyframes lv-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lv-slide-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
