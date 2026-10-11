@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { validateRegistration } from '../../utils/registrationValidation.js';
 import './RegisterPageHenedo.css';
 
@@ -9,15 +9,15 @@ const i18nContent = {
     editorialEyebrow: 'LƯU GIỮ HÔM NAY · TRAO GỬI MAI SAU',
     editorialHeading: 'Một nơi gìn giữ\nnhững điều quý giá nhất.',
     editorialDesc:
-      'Kho lưu trữ số an toàn, nơi bạn chủ động sắp xếp tài sản, ý nguyện và ký ức để chuyển giao trọn vẹn cho người thân yêu.',
-    pillar1: 'Bảo mật nhiều lớp · Kiến trúc mã hóa tiêu chuẩn bảo vệ tài sản số cá nhân.',
-    pillar2: 'Chủ động chuyển giao · Tự quyết định người nhận và thời điểm bàn giao.',
-    pillar3: 'Quy trình minh bạch · Hỗ trợ thiết lập bàn giao theo đúng ý nguyện.',
+      'Không gian số thanh bình, nơi bạn chủ động sắp xếp tài sản, lưu giữ ký ức và chuẩn bị kế hoạch trao gửi trọn vẹn cho người thân yêu.',
+    pillar1: 'Sắp xếp tập trung · Dễ dàng hệ thống hóa và quản lý danh mục tài sản số cá nhân.',
+    pillar2: 'Chủ động chuyển giao · Tự quyết định người nhận và chuẩn bị lộ trình bàn giao theo ý nguyện.',
+    pillar3: 'Gìn giữ trọn vẹn · Lưu giữ kỷ niệm và thông điệp ý nghĩa gửi gắm đến người thân yêu.',
     copyright: '© 2026 LegacyVault · Sanctuary of Generations',
 
     formBadge: 'KHỞI TẠO TÀI KHOẢN DI SẢN',
     title: 'Tạo tài khoản cá nhân',
-    subtitle: 'Khởi tạo không gian số an toàn để sắp xếp tài sản cá nhân và chỉ định người thụ hưởng.',
+    subtitle: 'Khởi tạo không gian số để sắp xếp tài sản cá nhân và chuẩn bị kế hoạch trao gửi di sản.',
 
     fullNameLabel: 'Họ và tên',
     fullNamePlaceholder: 'Ví dụ: Nguyễn Văn An',
@@ -40,9 +40,16 @@ const i18nContent = {
     signinPrompt: 'Đã có tài khoản?',
     signinAction: 'Đăng nhập',
     pendingNotice: 'Thông tin đăng ký đã được xác thực hợp lệ. Hệ thống đang tiến hành xử lý yêu cầu tạo tài khoản.',
-    successNotice: 'Đăng ký thành công! Bạn có thể đăng nhập để bắt đầu cấu hình kho.',
+    successNotice: 'Đăng ký thành công! Bạn có thể đăng nhập để bắt đầu thiết lập kho di sản.',
     failureNotice: 'Không thể đăng ký. Vui lòng kiểm tra lại thông tin.',
-    rbacNote: 'Cổng đăng ký mở dành riêng cho cá nhân quản lý tài sản (Vault Owner). Tài khoản nhân viên (Staff) và chuyên viên pháp lý (Legal Verifier) do Quản trị viên cấp quyền.',
+
+    termsModalTitle: 'Thông tin Điều khoản dịch vụ',
+    termsModalContent:
+      'Văn bản Điều khoản dịch vụ chính thức của LegacyVault hiện đang trong giai đoạn hoàn thiện pháp lý và sẽ được công bố đầy đủ khi hệ thống chính thức ra mắt. Tất cả các cam kết về quyền lợi và nghĩa vụ của người sử dụng sẽ tuân thủ nghiêm ngặt các quy định pháp luật hiện hành.',
+    privacyModalTitle: 'Chính sách bảo vệ dữ liệu di sản',
+    privacyModalContent:
+      'Chính sách bảo vệ dữ liệu và quyền riêng tư chính thức của LegacyVault hiện đang được hoàn thiện cùng các quy chuẩn kỹ thuật. Khi đi vào hoạt động, mọi thông tin và dữ liệu di sản của bạn sẽ được bảo vệ cẩn trọng theo các tiêu chuẩn bảo mật dữ liệu cao nhất.',
+    modalClose: 'Đã hiểu',
   },
   en: {
     brandName: 'LegacyVault',
@@ -50,15 +57,15 @@ const i18nContent = {
     editorialEyebrow: 'PRESERVE TODAY · PASS ON TOMORROW',
     editorialHeading: 'A peaceful sanctuary\nfor what matters most.',
     editorialDesc:
-      'A secure, calm digital haven where your personal assets, heartfelt wishes, and family memories are safeguarded for future generations.',
-    pillar1: 'Multi-Layer Security · Standardized encryption architecture safeguarding personal digital assets.',
-    pillar2: 'Autonomous Transfer · Full control over designated recipients and delivery schedule.',
-    pillar3: 'Transparent Process · Structured workflow honoring your verified instructions.',
+      'A serene digital haven where you can thoughtfully organize personal assets, cherish family memories, and prepare plans for loved ones.',
+    pillar1: 'Centralized Organization · Easily structure and manage your personal digital assets in one place.',
+    pillar2: 'Autonomous Transfer · Decide designated recipients and prepare transfer plans on your own terms.',
+    pillar3: 'Preserve with Care · Safeguard meaningful memories and heartfelt messages for future generations.',
     copyright: '© 2026 LegacyVault · Sanctuary of Generations',
 
     formBadge: 'INITIALIZE PERSONAL SANCTUARY',
     title: 'Create personal account',
-    subtitle: 'Set up your secure digital space to organize personal assets and designate beneficiaries.',
+    subtitle: 'Set up your digital space to organize personal assets and prepare your legacy transfer plan.',
 
     fullNameLabel: 'Full Name',
     fullNamePlaceholder: 'e.g. Alexander Vance',
@@ -81,9 +88,16 @@ const i18nContent = {
     signinPrompt: 'Already have an account?',
     signinAction: 'Sign in',
     pendingNotice: 'Registration details validated. System is processing your account creation request.',
-    successNotice: 'Registration successful! You may now sign in to set up your vault.',
+    successNotice: 'Registration successful! You may now sign in to begin organizing your vault.',
     failureNotice: 'Registration failed. Please check your inputs.',
-    rbacNote: 'Public registration is exclusively for personal account holders (Vault Owners). Staff and Legal Verifier accounts are provisioned by an Administrator.',
+
+    termsModalTitle: 'Terms of Service Notice',
+    termsModalContent:
+      'The formal LegacyVault Terms of Service are currently undergoing legal finalization and will be published upon the official public release. All user rights and obligations will adhere strictly to applicable laws and standards.',
+    privacyModalTitle: 'Heritage Privacy Policy Notice',
+    privacyModalContent:
+      'The formal LegacyVault Data Privacy Policy is being finalized alongside technical security specifications. When live, your data and digital heritage assets will be safeguarded with strict confidentiality in compliance with data protection regulations.',
+    modalClose: 'Understood',
   },
 };
 
@@ -103,8 +117,20 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const [policyModal, setPolicyModal] = useState(null);
 
   const t = i18nContent[lang];
+
+  useEffect(() => {
+    if (!policyModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPolicyModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [policyModal]);
 
   const handleLoginClick = (e) => {
     e.preventDefault();
@@ -222,8 +248,8 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
           ================================================================== */}
       <section className="henedo-editorial-region" aria-label="Brand Sanctuary Story">
         <div className="editorial-content-wrapper">
-          {/* Top Brand Header */}
-          <header className="henedo-brand-header">
+          {/* Top Brand Header (Entrance 1) */}
+          <header className="henedo-brand-header henedo-entrance-1">
             <div className="henedo-brand-lockup">
               <div className="henedo-brand-crest" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -247,12 +273,15 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
 
           {/* Main Story Body */}
           <div className="editorial-story-body">
-            <div className="henedo-eyebrow-pill">{t.editorialEyebrow}</div>
-            <h1 className="editorial-heading">{t.editorialHeading}</h1>
-            <p className="editorial-description">{t.editorialDesc}</p>
+            {/* Eyebrow Pill (Entrance 2) */}
+            <div className="henedo-eyebrow-pill henedo-entrance-2">{t.editorialEyebrow}</div>
 
-            {/* Calm Organic Visual: Soft layered watercolor & gold contour curves */}
-            <div className="henedo-calm-artwork" aria-hidden="true">
+            {/* Heading & Description (Entrance 3) */}
+            <h1 className="editorial-heading henedo-entrance-3">{t.editorialHeading}</h1>
+            <p className="editorial-description henedo-entrance-3">{t.editorialDesc}</p>
+
+            {/* Calm Organic Visual: Noticeable Living Heritage Wave swells (Entrance 4) */}
+            <div className="henedo-calm-artwork henedo-entrance-4" aria-hidden="true">
               <svg
                 viewBox="0 0 460 220"
                 preserveAspectRatio="none"
@@ -261,51 +290,60 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
               >
                 <defs>
                   <linearGradient id="hnSoftGreen" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#1a4c3e" stopOpacity="0.8" />
-                    <stop offset="50%" stopColor="#245d4d" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#13382d" stopOpacity="0.9" />
+                    <stop offset="0%" stopColor="#1a4c3e" stopOpacity="0.88" />
+                    <stop offset="50%" stopColor="#245d4d" stopOpacity="0.65" />
+                    <stop offset="100%" stopColor="#10362b" stopOpacity="0.96" />
                   </linearGradient>
                   <linearGradient id="hnCeladon" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#82b5a5" stopOpacity="0.3" />
-                    <stop offset="60%" stopColor="#c5e0d6" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#a3cfc2" stopOpacity="0.1" />
+                    <stop offset="0%" stopColor="#82b5a5" stopOpacity="0.45" />
+                    <stop offset="50%" stopColor="#c5e0d6" stopOpacity="0.55" />
+                    <stop offset="100%" stopColor="#9ccbc0" stopOpacity="0.25" />
                   </linearGradient>
                   <linearGradient id="hnGoldLine" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(197, 160, 89, 0.1)" />
-                    <stop offset="50%" stopColor="rgba(217, 185, 120, 0.85)" />
-                    <stop offset="100%" stopColor="rgba(197, 160, 89, 0.2)" />
+                    <stop offset="0%" stopColor="rgba(197, 160, 89, 0.4)" />
+                    <stop offset="50%" stopColor="rgba(235, 205, 140, 1)" />
+                    <stop offset="100%" stopColor="rgba(197, 160, 89, 0.5)" />
                   </linearGradient>
                 </defs>
 
-                {/* Soft undulating organic dunes */}
-                <path
-                  d="M0 160 C 120 110, 240 180, 360 120 C 410 95, 440 130, 460 110 L 460 220 L 0 220 Z"
-                  fill="url(#hnSoftGreen)"
-                />
-                <path
-                  d="M0 180 C 100 130, 210 190, 320 140 C 390 105, 430 150, 460 135 L 460 220 L 0 220 Z"
-                  fill="url(#hnCeladon)"
-                />
-                {/* Delicate gold contour filament */}
-                <path
-                  d="M0 160 C 120 110, 240 180, 360 120 C 410 95, 440 130, 460 110"
-                  fill="none"
-                  stroke="url(#hnGoldLine)"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M20 195 C 130 155, 230 205, 340 160 C 400 135, 440 165, 460 155"
-                  fill="none"
-                  stroke="rgba(217, 185, 120, 0.45)"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                />
+                {/* Back Wave Layer & Primary Gold Contour (Grouped for perfect alignment) */}
+                <g className="hn-wave-group hn-wave-group-back">
+                  <path
+                    className="hn-wave-back"
+                    d="M -120 160 C -30 110, 60 180, 160 130 C 250 90, 340 170, 440 120 C 500 95, 540 140, 580 115 L 580 240 L -120 240 Z"
+                    fill="url(#hnSoftGreen)"
+                  />
+                  <path
+                    className="hn-gold-main"
+                    d="M -120 160 C -30 110, 60 180, 160 130 C 250 90, 340 170, 440 120 C 500 95, 540 140, 580 115"
+                    fill="none"
+                    stroke="url(#hnGoldLine)"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </g>
+
+                {/* Front Wave Layer & Secondary Gold Accent (Grouped for counter-movement) */}
+                <g className="hn-wave-group hn-wave-group-front">
+                  <path
+                    className="hn-wave-front"
+                    d="M -120 180 C -40 130, 50 195, 140 145 C 230 100, 310 185, 410 135 C 470 105, 530 160, 580 130 L 580 240 L -120 240 Z"
+                    fill="url(#hnCeladon)"
+                  />
+                  <path
+                    className="hn-gold-sub"
+                    d="M -100 195 C -10 150, 70 205, 160 160 C 245 125, 335 195, 425 150 C 490 120, 540 170, 580 145"
+                    fill="none"
+                    stroke="rgba(217, 185, 120, 0.65)"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
+                </g>
               </svg>
             </div>
 
-            {/* Calm Pillars of Trust */}
-            <div className="henedo-pillars">
+            {/* Calm Pillars of Trust (Entrance 4) */}
+            <div className="henedo-pillars henedo-entrance-4">
               <div className="henedo-pillar-item">
                 <span className="pillar-leaf-bullet" aria-hidden="true">◆</span>
                 <span className="pillar-text">{t.pillar1}</span>
@@ -333,7 +371,8 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
           Editorial typography, generous breathing room, sand-gold CTA
           ================================================================== */}
       <main className="henedo-form-region" aria-label="Registration Form">
-        <div className="henedo-form-container">
+        {/* Form Container (Entrance 5) */}
+        <div className="henedo-form-container henedo-entrance-5">
           {/* Top Form Header with Language Toggle */}
           <div className="henedo-form-topbar">
             <span className="henedo-form-badge">{t.formBadge}</span>
@@ -529,8 +568,23 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
                   </svg>
                 </span>
                 <span className="henedo-checkbox-text">
-                  {t.termsText} <a href="#terms">{t.termsLink}</a> {t.andText}{' '}
-                  <a href="#privacy">{t.privacyLink}</a>.
+                  {t.termsText}{' '}
+                  <button
+                    type="button"
+                    className="hn-text-link"
+                    onClick={() => setPolicyModal('terms')}
+                  >
+                    {t.termsLink}
+                  </button>{' '}
+                  {t.andText}{' '}
+                  <button
+                    type="button"
+                    className="hn-text-link"
+                    onClick={() => setPolicyModal('privacy')}
+                  >
+                    {t.privacyLink}
+                  </button>
+                  .
                 </span>
               </label>
               {errors.agreeTerms && (
@@ -563,7 +617,7 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
             </div>
           )}
 
-          {/* Footer Info & Preview Notice */}
+          {/* Footer Info & Signin Prompt (No RBAC note) */}
           <footer className="henedo-form-footer">
             {typeof onNavigateToLogin === 'function' && (
               <div className="henedo-signin-prompt">
@@ -573,11 +627,44 @@ export default function RegisterPageHenedo({ onRegister, onNavigateToLogin }) {
                 </a>
               </div>
             )}
-
-            <p className="henedo-rbac-note">{t.rbacNote}</p>
           </footer>
         </div>
       </main>
+
+      {/* Informational Policy Modal */}
+      {policyModal && (
+        <div
+          className="henedo-modal-backdrop"
+          role="presentation"
+          onClick={() => setPolicyModal(null)}
+        >
+          <div
+            className="henedo-modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hn-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="henedo-modal-crest" aria-hidden="true">
+              ✦
+            </div>
+            <h3 id="hn-modal-title" className="henedo-modal-title">
+              {policyModal === 'terms' ? t.termsModalTitle : t.privacyModalTitle}
+            </h3>
+            <p className="henedo-modal-body">
+              {policyModal === 'terms' ? t.termsModalContent : t.privacyModalContent}
+            </p>
+            <button
+              type="button"
+              className="henedo-modal-close-btn"
+              onClick={() => setPolicyModal(null)}
+              autoFocus
+            >
+              {t.modalClose}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
