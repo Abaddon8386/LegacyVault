@@ -1,15 +1,41 @@
 spring:
   application:
     name: legacyvault-backend
-
   datasource:
-    url: jdbc:sqlserver://ABADDON:1433;databaseName=LegacyVault;encrypt=true;trustServerCertificate=true;integratedSecurity=true
+    url: ${DB_URL}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  flyway:
+    enabled: true
+    locations: filesystem:database/migration
 
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: true
+    database-platform: org.hibernate.dialect.SQLServerDialect
     properties:
       hibernate:
         format_sql: true
+logging:
+  level:
+    org.flywaydb: DEBUG
+
+
+#spring:
+#  application:
+#    name: legacyvault-backend
+#
+#  datasource:
+#    url: ${DB_URL}
+#    username: ${DB_USERNAME}
+#    password: ${DB_PASSWORD}
+#    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: none
+#    show-sql: true
+#    database-platform: org.hibernate.dialect.SQLServerDialect
+#    properties:
+#      hibernate:
+#        format_sql: true
