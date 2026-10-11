@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import WillUploadPage from './pages/wills/WillUploadPage.jsx';
 
-function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
+function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateToWills }) {
   return (
     <main
       style={{
@@ -115,6 +116,29 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
           >
             <span>Đến trang Đăng nhập</span>
           </button>
+          {onNavigateToWills && (
+            <button
+              type="button"
+              onClick={onNavigateToWills}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                backgroundColor: '#ffffff',
+                color: '#164639',
+                fontWeight: 600,
+                fontSize: '14px',
+                padding: '12px 24px',
+                borderRadius: '10px',
+                border: '1px solid #c5a059',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+              }}
+            >
+              <span>Di chúc số hóa</span>
+            </button>
+          )}
         </div>
       </div>
     </main>
@@ -139,9 +163,10 @@ export default function App() {
     setCurrentPath(path);
   };
 
-  // Các route hợp lệ cho PS-1 & PS-2
+  // Các route hợp lệ
   const isRegisterRoute = currentPath === '/register' || currentPath === '/';
   const isLoginRoute = currentPath === '/login';
+  const isWillRoute = currentPath === '/wills' || currentPath === '/wills/upload';
 
   return (
     <div className="lv-app-root">
@@ -149,12 +174,15 @@ export default function App() {
         <RegisterPageHenedo onNavigateToLogin={() => navigateTo('/login')} />
       ) : isLoginRoute ? (
         <LoginPage onNavigateToRegister={() => navigateTo('/register')} />
+      ) : isWillRoute ? (
+        <WillUploadPage onNavigateHome={() => navigateTo('/register')} />
       ) : (
         <NotFoundFallback
           onNavigateToRegister={() => navigateTo('/register')}
           onNavigateToLogin={() => navigateTo('/login')}
+          onNavigateToWills={() => navigateTo('/wills')}
         />
       )}
     </div>
   );
-}
+}
