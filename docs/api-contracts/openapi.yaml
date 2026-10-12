@@ -3,9 +3,8 @@ info:
   title: LegacyVault API
   version: 0.1.0-draft
   description: |
-    Contract Sprint 1 (PS-9 → PS-23). **DRAFT chờ FE/BE review.**
-    Mục có `x-status: proposed` là đề xuất chưa được nhóm phê duyệt (xem open-decisions.md).
-    Mục có `x-status: implemented` đã có code thật (PS-74).
+    Contract Sprint 1 (PS-9 → PS-23). Quyết định đã chốt ngày 2026-10-11 (xem open-decisions.md), chờ FE/BE review.
+    `x-status: designed` = đã chốt contract, chưa triển khai. `x-status: implemented` = đã có code thật (PS-74).
     Mọi lỗi dùng cùng hình dạng `ApiError` (kể cả 401/403). FE phân loại lỗi bằng `code`, không bằng `message`.
     Ví dụ dùng dữ liệu giả; không chứa token hay mật khẩu thật.
 servers:
@@ -62,7 +61,7 @@ paths:
     post:
       tags: [Auth]
       summary: Đăng ký tài khoản (PS-9, ST-01)
-      x-status: proposed
+      x-status: designed
       security: []
       requestBody:
         required: true
@@ -98,7 +97,7 @@ paths:
     post:
       tags: [Auth]
       summary: Đăng nhập, nhận JWT (PS-10, ST-01)
-      x-status: proposed
+      x-status: designed
       security: []
       requestBody:
         required: true
@@ -124,7 +123,7 @@ paths:
     get:
       tags: [Auth]
       summary: Thông tin người đăng nhập (đề xuất D-API-23)
-      x-status: proposed
+      x-status: designed
       responses:
         '200':
           description: OK
@@ -138,7 +137,7 @@ paths:
       tags: [Vaults]
       summary: Tạo Vault (PS-12, ST-02)
       description: Chủ sở hữu lấy từ Security Context. Mọi trường `ownerId`/`status` trong body bị bỏ qua.
-      x-status: proposed
+      x-status: designed
       requestBody:
         required: true
         content:
@@ -156,10 +155,11 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
     get:
       tags: [Vaults]
       summary: Liệt kê Vault của tôi (đề xuất D-API-23)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
@@ -177,7 +177,7 @@ paths:
       tags: [Vaults]
       summary: Xem Vault (PS-14) — chỉ chủ sở hữu
       description: Không tồn tại hoặc của người khác -> 404 (D-API-07).
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -195,7 +195,7 @@ paths:
     get:
       tags: [Beneficiaries]
       summary: Kiểm tra điều kiện cấu hình, cần ≥ 1 Beneficiary (PS-21, D-API-25)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -219,7 +219,7 @@ paths:
       tags: [Assets]
       summary: Tạo Asset (PS-15, ST-02)
       description: '`payload` chỉ ghi, mã hóa phía server, không bao giờ có trong response.'
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       requestBody:
@@ -244,7 +244,7 @@ paths:
     get:
       tags: [Assets]
       summary: Liệt kê Asset của Vault (PS-15)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/Page'
@@ -263,7 +263,7 @@ paths:
     get:
       tags: [Assets]
       summary: Xem Asset (PS-16)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/AssetId'
@@ -280,7 +280,7 @@ paths:
       tags: [Assets]
       summary: Cập nhật một phần Asset (PS-16, D-API-24)
       description: Chỉ `name`, `description`, `payload` được đổi; trường khác bị bỏ qua.
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/AssetId'
@@ -308,8 +308,8 @@ paths:
       summary: Upload bản số hóa di chúc (PS-17, ST-03)
       description: |
         Trạng thái chỉ `UPLOADED`; không bao giờ `LEGAL_APPROVED`. SHA-256 chỉ phát hiện thay đổi,
-        không chứng minh giá trị pháp lý. Loại file: PDF/JPEG/PNG, ≤ 10 MB (D-API-14, chưa chốt).
-      x-status: proposed
+        không chứng minh giá trị pháp lý. Loại file: PDF/JPEG/PNG, ≤ 10 MB, cấu hình được (D-API-14).
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       requestBody:
@@ -340,7 +340,7 @@ paths:
     get:
       tags: [Wills]
       summary: Liệt kê hồ sơ di chúc số hóa (PS-17)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -357,7 +357,7 @@ paths:
     get:
       tags: [Wills]
       summary: Xem metadata di chúc số hóa (không trả nội dung file)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/WillId'
@@ -375,7 +375,7 @@ paths:
     post:
       tags: [Wills]
       summary: Tải phiên bản mới, giữ phiên bản cũ (PS-18)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/WillId'
@@ -404,7 +404,7 @@ paths:
     get:
       tags: [Wills]
       summary: Danh sách phiên bản kèm SHA-256 (PS-18)
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/WillId'
@@ -425,7 +425,7 @@ paths:
       tags: [Trustees]
       summary: Chỉ định Trustee, tùy chọn (PS-19, ST-04)
       description: Không cần tài khoản; không cấp quyền mở khóa/giải mã/nhận thay (D-TRUSTEE-001).
-      x-status: proposed
+      x-status: designed
       requestBody:
         required: true
         content:
@@ -446,7 +446,7 @@ paths:
     get:
       tags: [Trustees]
       summary: Trustee hiện hành của Vault
-      x-status: proposed
+      x-status: designed
       parameters:
         - name: vaultId
           in: query
@@ -467,7 +467,7 @@ paths:
     put:
       tags: [Trustees]
       summary: Cập nhật thông tin Trustee
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/TrusteeId'
       requestBody:
@@ -491,7 +491,7 @@ paths:
     post:
       tags: [Trustees]
       summary: Thu hồi chỉ định, giữ lịch sử
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/TrusteeId'
       responses:
@@ -510,7 +510,7 @@ paths:
       tags: [Beneficiaries]
       summary: Thêm Beneficiary, không cần tài khoản (PS-20, ST-05)
       description: Không tự tạo tài khoản; không có trường phần chia (do văn bản căn cứ được Legal duyệt quyết định).
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       requestBody:
@@ -533,7 +533,7 @@ paths:
     get:
       tags: [Beneficiaries]
       summary: Liệt kê Beneficiary của Vault
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -550,7 +550,7 @@ paths:
     put:
       tags: [Beneficiaries]
       summary: Cập nhật Beneficiary
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
         - $ref: '#/components/parameters/BeneficiaryId'
@@ -576,7 +576,7 @@ paths:
       tags: [DMS]
       summary: Bật/cấu hình chu kỳ DMS (PS-22, ST-06)
       description: Chặn bằng 422 BENEFICIARY_REQUIRED khi Vault chưa có Beneficiary. DMS không mở khóa/giải mã.
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       requestBody:
@@ -600,7 +600,7 @@ paths:
     get:
       tags: [DMS]
       summary: Xem cấu hình DMS
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -618,7 +618,7 @@ paths:
       tags: [DMS]
       summary: Owner check-in, cập nhật next_check_at (PS-22)
       description: Chỉ hợp lệ khi DMS ở MONITORING (D-API-27). Không mở khóa, không giải mã.
-      x-status: proposed
+      x-status: designed
       parameters:
         - $ref: '#/components/parameters/VaultId'
       responses:
@@ -668,12 +668,12 @@ components:
     Page:
       name: page
       in: query
-      description: Từ 0 (D-API-06, chưa chốt)
+      description: Từ 0 (D-API-06)
       schema: { type: integer, minimum: 0, default: 0 }
     Size:
       name: size
       in: query
-      description: Mặc định 20, tối đa 100 (D-API-06, chưa chốt)
+      description: Mặc định 20, tối đa 100 (D-API-06)
       schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
 
   responses:
@@ -784,6 +784,7 @@ components:
             - UNSUPPORTED_MEDIA_TYPE
             - INTERNAL_ERROR
             - BENEFICIARY_REQUIRED
+            - VAULT_ALREADY_EXISTS
             - TRUSTEE_ALREADY_EXISTS
             - VAULT_NOT_EDITABLE
             - DMS_NOT_MONITORING
@@ -841,7 +842,7 @@ components:
         email: { type: string, format: email }
         roles:
           type: array
-          items: { type: string, enum: [VAULT_OWNER, STAFF_EXECUTOR, LEGAL_VERIFIER, ADMIN] }
+          items: { type: string, enum: [VAULT_OWNER, STAFF_EXECUTOR, LEGAL_VERIFIER, ADMIN, BENEFICIARY] }
         status: { type: string, example: ACTIVE }
         createdAt: { type: string, format: date-time }
     LoginResponse:
@@ -995,10 +996,10 @@ components:
         dateOfBirth: { type: string, format: date }
         phone: { type: string }
         email: { type: string, format: email }
-        identityNumber: { type: string, writeOnly: true, description: Chỉ ghi; response chỉ trả dạng che (D-API-26) }
+        identityNumber: { type: string, writeOnly: true, description: Chỉ ghi; response không bao giờ trả số này (D-API-26) }
     BeneficiaryResponse:
       type: object
-      required: [id, vaultId, fullName, hasAccount, status]
+      required: [id, vaultId, fullName, hasAccount, hasIdentityNumber, status]
       properties:
         id: { type: string, format: uuid }
         vaultId: { type: string, format: uuid }
@@ -1007,7 +1008,7 @@ components:
         dateOfBirth: { type: string, format: date, nullable: true }
         phone: { type: string, nullable: true }
         email: { type: string, nullable: true }
-        identityNumberMasked: { type: string, nullable: true, example: '******1234' }
+        hasIdentityNumber: { type: boolean }
         hasAccount: { type: boolean, description: Luôn false ở Sprint 1 }
         status: { type: string, enum: [DESIGNATED] }
         createdAt: { type: string, format: date-time }
@@ -1044,7 +1045,7 @@ components:
         checkIntervalDays:
           type: integer
           minimum: 1
-          description: Khoảng cho phép chưa chốt (D-API-15); ST-06 nêu ví dụ 30, 90
+          description: Khoảng cho phép do cấu hình (D-API-15); ST-06 nêu ví dụ 30, 90
     DmsResponse:
       type: object
       required: [vaultId, status, checkIntervalDays, nextCheckAt]

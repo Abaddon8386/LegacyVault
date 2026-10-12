@@ -1,6 +1,6 @@
 # Di chúc số hóa — PS-17, PS-18 (ST-03, LV-WILL-001)
 
-Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Vault.
+Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vault.
 
 ## Nguyên tắc nghiệp vụ
 
@@ -63,6 +63,19 @@ Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Va
 ## GET /api/v1/vaults/{vaultId}/wills/{willId}/versions — PS-18
 
 - Danh sách `WillVersion` (mới nhất trước) để đối chiếu toàn vẹn.
+
+## Ánh xạ sang database (PS-73, đã chốt 2026-10-11)
+
+Giao diện API là "di chúc" (`/wills`), nhưng DB lưu bằng ba bảng. Service chịu trách nhiệm ánh xạ:
+
+| Khái niệm API | Bảng DB | Ghi chú |
+|---|---|---|
+| Hồ sơ di chúc (`WillResponse`) | `assets` (loại `DOCUMENT`) + `legal_documents` (`document_type = 'WILL'`) | `legal_documents` gắn 1-1 với asset |
+| Phiên bản file (`WillVersion`) | `asset_versions` | `version_no`, `sha256_hash`, `upload_status = 'UPLOADED'`, nội dung file mã hóa |
+| Trạng thái `UPLOADED` | `asset_versions.upload_status` | **Không** lấy từ `legal_documents.verification_status` (mặc định `PENDING_VERIFICATION`, thuộc quy trình Legal) |
+
+- Bản số hóa được tạo không đồng nghĩa Legal đã duyệt: API này không bao giờ ghi `LEGAL_APPROVED` vào `legal_documents`.
+- Cột `legal_documents.document_type` (loại tài liệu: `WILL`...) là khái niệm **khác** với `legal_basis_type` của D-LEGAL-002 (`NOTARIAL_PARTITION`, `COURT_*`); D-LEGAL-002 đã được đổi tên trường để không trùng (2026-10-12).
 
 ## Chưa có trong Sprint 1
 

@@ -1,13 +1,14 @@
 # Dead Man's Switch — PS-22, PS-23 (ST-06, ST-07, LV-DEATH-001)
 
-Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Vault (trừ scheduler PS-23: tác vụ nội bộ).
+Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vault (trừ scheduler PS-23: tác vụ nội bộ).
 
 ## Nguyên tắc nghiệp vụ
 
 - DMS chỉ là bộ đếm sự sống. **Hết hạn ≠ xác nhận tử vong.** Không có trạng thái `DEATH_CONFIRMED`, không `UNLOCKED`,
   không giải mã, không gửi tài sản cho bất kỳ ai (LV-DEATH-001).
 - Owner cấu hình chu kỳ; check-in đặt lại `nextCheckAt`.
-- Khoảng giá trị cho phép của `checkIntervalDays` và độ dài Grace Period **chưa chốt** (D-API-15): để cấu hình, không hardcode.
+- Khoảng giá trị cho phép của `checkIntervalDays` do cấu hình qua property, không hardcode (D-API-15).
+- **Grace Period mặc định 1 ngày** (nhóm chốt 2026-10-12; DB `DEFAULT 1`). Sprint 1 chưa có trường/endpoint để Owner đổi giá trị này (ticket PS-22 chỉ cấu hình chu kỳ).
 
 ## Mô hình `DmsResponse`
 
@@ -38,8 +39,8 @@ Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Va
 - Owner xác nhận còn sống. Không có body.
 - **Hành vi:** `lastCheckInAt = now`, `nextCheckAt = now + checkIntervalDays`. **Không** mở khóa, **không** giải mã.
 - **Response 200:** `DmsResponse` mới.
-- **Lỗi:** `401` · `403` · `404` · `409 DMS_NOT_MONITORING` khi DMS không ở `MONITORING` — luồng check-in/huỷ báo động
-  trong lúc `TRIGGERED`/Grace **chưa chốt** (D-API-27, liên quan LV-OWN-001).
+- **Lỗi:** `401` · `403` · `404` · `409 DMS_NOT_MONITORING` khi DMS không ở `MONITORING` — Sprint 1 từ chối như trên (D-API-27); luồng huỷ
+  báo động trong lúc `TRIGGERED`/Grace (LV-OWN-001) là việc riêng ở sprint sau.
 - **Audit:** `DMS_CHECKED_IN`.
 
 ## PS-23 — Scheduler `TRIGGERED` + Grace (không có HTTP endpoint)

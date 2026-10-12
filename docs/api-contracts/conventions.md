@@ -1,6 +1,6 @@
 # Quy ước chung (DTO · Validation · URL · i18n)
 
-Các mục **[Đề xuất]** chờ nhóm xác nhận (xem [open-decisions.md](open-decisions.md)).
+Các quyết định nền tảng đã chốt, xem [open-decisions.md](open-decisions.md) (D-API-01..11).
 
 ## 1. URL & HTTP
 
@@ -10,13 +10,13 @@ Các mục **[Đề xuất]** chờ nhóm xác nhận (xem [open-decisions.md](o
 - `GET` không thay đổi dữ liệu. `POST` tạo mới trả `201` + header `Location`. Cập nhật toàn phần `PUT`, một phần `PATCH`.
 - Mọi request/response JSON dùng `Content-Type: application/json; charset=UTF-8`, trừ upload (`multipart/form-data`).
 
-## 2. Đặt tên & kiểu dữ liệu **[Đề xuất]**
+## 2. Đặt tên & kiểu dữ liệu (D-API-08..10)
 
 | Mục | Quy ước |
 |---|---|
 | Tên trường JSON | `camelCase` |
 | Enum | chuỗi `UPPER_SNAKE_CASE` (`ACTIVE`, `NOTARIAL`) |
-| ID công khai | UUID dạng chuỗi (`"3f2b8c1e-..."`). Không để lộ ID tự tăng của DB |
+| ID công khai | UUID dạng chuỗi (`"3f2b8c1e-..."`) — **đã chốt** (D-API-08). Khóa chính `BIGINT IDENTITY` của DB chỉ dùng nội bộ, không xuất hiện trong URL/JSON; DB có cột UUID công khai riêng |
 | Thời gian | ISO-8601 UTC có hậu tố `Z` (`2026-10-08T10:00:00Z`) |
 | Số tiền/số lớn | không dùng trong Sprint 1 |
 | Trường rỗng | trả `null` hoặc bỏ qua; mảng rỗng luôn là `[]` |
@@ -39,7 +39,7 @@ Các mục **[Đề xuất]** chờ nhóm xác nhận (xem [open-decisions.md](o
 - Validation nghiệp vụ (trùng email, vượt quyền, sai trạng thái) **không** nằm ở DTO mà ném `BusinessException` từ Service.
 - Chuẩn hóa trước khi lưu: `trim` chuỗi, email viết thường.
 
-## 5. Phân trang & sắp xếp **[Đề xuất — chưa chốt]**
+## 5. Phân trang & sắp xếp (D-API-06)
 
 Query: `?page=0&size=20&sort=createdAt,desc`. `page` bắt đầu từ 0; `size` mặc định 20, tối đa 100.
 
@@ -57,8 +57,8 @@ Chỉ các endpoint trả danh sách có thể tăng trưởng mới phân trang
 - Đường dẫn công khai (không cần token) — danh sách duy nhất, mọi đường dẫn khác yêu cầu đăng nhập:
   `POST /auth/register`, `POST /auth/login`, `GET /system/ping`, `GET /system/db-check` (chỉ profile `dev`).
 - 401 = chưa/không hợp lệ xác thực. 403 = đã xác thực nhưng thiếu role.
-- **Ownership:** người đăng nhập không phải chủ của Vault → `404 RESOURCE_NOT_FOUND` (không lộ việc Vault có tồn tại) **[Đề xuất D-API-07]**.
-- Lưu/refresh token ở FE: **chưa chốt** (D-API-04/05).
+- **Ownership:** người đăng nhập không phải chủ của Vault → `404 RESOURCE_NOT_FOUND` (không lộ việc Vault có tồn tại) (D-API-07).
+- Token ở FE: lưu trong bộ nhớ JS, không dùng `localStorage`; không có refresh token ở Sprint 1 (D-API-04/05).
 
 ## 7. i18n (vi/en)
 

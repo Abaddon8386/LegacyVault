@@ -1,6 +1,6 @@
 # Asset — PS-15, PS-16 (ST-02)
 
-Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Vault. Tạo Asset **chưa phải** bàn giao (không có trường/trạng thái handover).
+Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vault. Tạo Asset **chưa phải** bàn giao (không có trường/trạng thái handover).
 
 ## Mô hình
 
@@ -15,7 +15,7 @@ Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Va
 | `hasPayload` | boolean | response: cho biết đã có nội dung |
 | `createdAt`, `updatedAt` | datetime | |
 
-Giới hạn kích thước `payload` do nhóm chốt (ví dụ ≤ 64 KB) — chưa chốt, vượt giới hạn → `400 VALIDATION_FAILED`.
+Giới hạn kích thước `payload`: mặc định 64 KB, cấu hình qua property (D-API-29); vượt giới hạn → `400 VALIDATION_FAILED`.
 
 ## POST /api/v1/vaults/{vaultId}/assets — PS-15
 

@@ -1,6 +1,6 @@
 # Trustee — PS-19 (ST-04, LV-EXT-001, D-TRUSTEE-001)
 
-Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Vault. URL theo D-TRUSTEE-001: **`/api/v1/trustees`**
+Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vault. URL theo D-TRUSTEE-001: **`/api/v1/trustees`**
 (không có API Trusted Contact riêng; `vaultId` truyền trong body/query — D-API-18).
 
 ## Nguyên tắc nghiệp vụ

@@ -36,7 +36,7 @@ Trạng thái: **đặc tả nội bộ**; **không có endpoint công khai** tr
 | Beneficiary | `BENEFICIARY_ADDED`, `BENEFICIARY_UPDATED` | PS-20 |
 | DMS | `DMS_CONFIGURED`, `DMS_CHECKED_IN`, `DMS_TRIGGERED` | PS-22, PS-23 |
 
-## Giao diện nội bộ (đề xuất)
+## Giao diện nội bộ
 
 `AuditService.record(AuditEvent)` được gọi trong cùng giao dịch với thao tác nghiệp vụ để không có thao tác thành công mà thiếu audit.
 

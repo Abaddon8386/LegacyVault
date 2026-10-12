@@ -1,7 +1,7 @@
 # API Contracts — LegacyVault (Sprint 1, PS-9 → PS-23)
 
-> **Trạng thái:** DRAFT chờ FE/BE review (PS-74). Nội dung đánh dấu **[Đề xuất]** là đề xuất của người soạn,
-> **chưa được nhóm phê duyệt**; các quyết định chưa chốt nằm trong [open-decisions.md](open-decisions.md).
+> **Trạng thái:** contract Sprint 1 đã chốt (Dương, 2026-10-11), chờ FE/BE xác nhận ở buổi review (PS-74).
+> Các quyết định nằm trong [open-decisions.md](open-decisions.md); mục thuộc người khác quyết vẫn để mở ở đó.
 > Nguồn nghiệp vụ: `00_Main_Flow_FINAL.md` (v4.2), `08_Decision_Unified_Trustee.md`, `09_Decision_Legal_Basis_Branches.md`.
 
 Contract là thỏa thuận giữa FE và BE: gọi vào đâu, gửi gì, nhận gì, lỗi gì. **Mọi PR làm thay đổi API công khai
@@ -13,7 +13,7 @@ phải cập nhật thư mục này và [openapi.yaml](openapi.yaml) trong cùng
 |---|---|---|
 | [conventions.md](conventions.md) | Quy ước chung: URL, JSON, DTO, validation, phân trang, i18n, bảo mật | tất cả |
 | [error-contract.md](error-contract.md) | Hình dạng lỗi chung, bảng mã lỗi, 401/403 | tất cả |
-| [open-decisions.md](open-decisions.md) | Quyết định còn mở + đề xuất | tất cả |
+| [open-decisions.md](open-decisions.md) | Nhật ký quyết định + mục còn mở | tất cả |
 | [dev-integration.md](dev-integration.md) | URL/port local, Vite proxy/CORS, chạy FE↔BE↔SQL Server, evidence | PS-74 |
 | [system.md](system.md) | `ping`, `db-check` (smoke test) | PS-74 |
 | [auth.md](auth.md) | Đăng ký, đăng nhập, RBAC | PS-9, PS-10, PS-11 |

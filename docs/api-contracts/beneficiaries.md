@@ -1,12 +1,13 @@
 # Beneficiary — PS-20, PS-21 (ST-05)
 
-Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Vault.
+Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vault.
 
 ## Nguyên tắc nghiệp vụ
 
 - Beneficiary **độc lập với tài khoản `User`**: không cần tài khoản khi khai báo; request/response không có `userId`.
 - **Không tự tạo tài khoản.** Tài khoản được tạo/liên kết sau, tại quầy, do Staff hướng dẫn (ST-24) — ngoài Sprint 1.
 - **Không** có Claim Link, OTP email, Guest Portal.
+- Bảng `asset_allocations` trong DB là **kế hoạch phân bổ chờ Legal duyệt** (LV-BASIS-001), không phải quyết định của Owner; Sprint 1 không có API cho bảng này.
 - Danh sách này chỉ **chỉ định ai là người thụ hưởng**. Owner **không** quyết định phần chia: phần chia do văn bản căn cứ được
   Legal duyệt (LV-BASIS-001), nên không có trường tỷ lệ/phần chia.
 - Trustee không thay thế Beneficiary: Vault chỉ có Trustee mà không có Beneficiary vẫn **chưa đủ điều kiện** cấu hình.
@@ -21,7 +22,7 @@ Trạng thái: **contract đề xuất**. Quyền: `VAULT_OWNER` + sở hữu Va
 | `relationship` | string ≤ 100 | tùy chọn |
 | `dateOfBirth` | date `YYYY-MM-DD` | tùy chọn, không ở tương lai |
 | `phone`, `email` | string | tùy chọn |
-| `identityNumberMasked` | string | vd `******1234`; số gốc là **write-only** (`identityNumber`), D-API-26 |
+| `hasIdentityNumber` | boolean | cho biết đã có số định danh; số gốc là **write-only** (`identityNumber`) và **không bao giờ** trả ra (D-API-26) |
 | `hasAccount` | boolean | chỉ đọc; luôn `false` ở Sprint 1 |
 | `status` | enum `DESIGNATED` | |
 | `createdAt`, `updatedAt` | datetime | |

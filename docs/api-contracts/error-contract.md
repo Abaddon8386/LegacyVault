@@ -59,10 +59,11 @@ Lỗi validation:
 | `UNSUPPORTED_MEDIA_TYPE` | 415 | Định dạng nội dung/file không hỗ trợ |
 | `INTERNAL_ERROR` | 500 | Mọi lỗi không lường trước. Luôn trả thông điệp chung |
 
-## 3. Mã lỗi nghiệp vụ dự kiến **[Đề xuất — chủ ticket thêm vào `ErrorCode` khi triển khai]**
+## 3. Mã lỗi nghiệp vụ dự kiến **[Đã chốt — chủ ticket thêm vào `ErrorCode` khi triển khai]**
 
 | `code` | HTTP | Ticket | Khi nào |
 |---|---|---|---|
+| `VAULT_ALREADY_EXISTS` | 409 | PS-12 | Owner đã có Vault (DB giới hạn mỗi Owner một Vault) |
 | `BENEFICIARY_REQUIRED` | 422 | PS-21 | Hoàn tất cấu hình/bật DMS khi Vault chưa có Beneficiary nào |
 | `TRUSTEE_ALREADY_EXISTS` | 409 | PS-19 | Vault đã có Trustee hiện hành khi tạo thêm |
 | `VAULT_NOT_EDITABLE` | 409 | PS-15/16/19/20/22 | Vault không còn ở trạng thái cho Owner sửa (sau ST-08) |
