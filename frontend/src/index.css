@@ -3,7 +3,9 @@
 /* ==========================================================================
    Base Reset & Normalization
    ========================================================================== */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -11,6 +13,7 @@
 
 html {
   font-size: 16px;
+  height: 100%;
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,16 +21,20 @@ html {
 }
 
 body {
+  height: 100%;
+  min-height: 100svh;
   font-family: var(--lv-font-sans);
   background-color: var(--lv-bg-canvas);
   color: var(--lv-text-ink);
   line-height: 1.6;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
+  min-height: 100%;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -48,8 +55,13 @@ p {
   margin: 0;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font: inherit;
+  font-family: inherit;
+  font-size: inherit;
   color: inherit;
 }
 

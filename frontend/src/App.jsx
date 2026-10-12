@@ -3,6 +3,8 @@ import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import VaultOverviewPage from './pages/vault/VaultOverviewPage.jsx';
 import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
+import { translations } from './i18n/translations';
+import { AssetManagementPage } from './pages/assets/AssetManagementPage';
 import AppShell from './components/layout/AppShell.jsx';
 
 function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
@@ -153,7 +155,7 @@ export default function App() {
   };
 
   // Environment gating
-  const isDev = Boolean(import.meta.env.DEV);
+  const isDev = !import.meta.env.PROD && Boolean(import.meta.env.DEV);
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const hasPreviewParam = searchParams?.get('preview') === 'true';
 
@@ -168,9 +170,10 @@ export default function App() {
 
   // PS-4 DMS route:
   const isDmsRoute = currentPath === '/dms';
+  const isAssetRoute = currentPath === '/assets' || currentPath === '/dashboard';
 
-  if (isDev && (isVaultRoute || isDmsRoute)) {
-    const activeTab = isDmsRoute ? 'dms' : 'vault';
+  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute)) {
+    const activeTab = isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
 
     return (
       <div className="lv-app-root">
@@ -184,12 +187,22 @@ export default function App() {
           onNavigateTab={(tab) => {
             if (tab === 'vault') {
               navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
+            } else if (tab === 'assets') {
+              navigateTo(hasPreviewParam ? '/assets?preview=true' : '/assets');
             } else if (tab === 'dms') {
               navigateTo(hasPreviewParam ? '/dms?preview=true' : '/dms');
             }
           }}
         >
-          {isDmsRoute ? (
+          {isAssetRoute ? (
+            <AssetManagementPage
+              key={hasPreviewParam ? 'preview-assets' : 'live-assets'}
+              t={translations[lang]} lang={lang}
+              isDevPreview={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : isDmsRoute ? (
             <DMSOverviewPage
               lang={lang}
               showDevToolbar={hasPreviewParam}

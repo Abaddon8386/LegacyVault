@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LegacyVault Design System â€” Standard Design Tokens (Henedo-Inspired)
+   LegacyVault Design System — Standard Design Tokens (Henedo-Inspired)
    Primary Art Direction: Editorial Luxury + Private Sanctuary (Warm Minimalism)
    Canonical Palette: Noble Forest Green, Sand Gold Accent, Warm Cream Canvas, Crisp White Surface
    ========================================================================== */
@@ -8,16 +8,19 @@
   /* ------------------------------------------------------------------------
      1. BRAND CORE IDENTITIES (Canonical Henedo Style)
      ------------------------------------------------------------------------ */
-  --lv-brand-forest: #164639;         /* Noble Forest Green - TÄ©nh láº·ng, báº£o máº­t, di sáº£n */
-  --lv-brand-forest-dark: #0c2b22;    /* Dark Forest Base - ÄĂ¡y gradient vĂ¹ng editorial */
-  --lv-brand-forest-deep: #10382d;    /* Mid Forest Green - Trung Ä‘iá»ƒm gradient */
+  --lv-brand-forest: #164639;         /* Noble Forest Green - Tĩnh lặng, bảo mật, di sản */
+  --lv-brand-forest-hover: #12372d;   /* Darker Forest on hover (PS-5) */
+  --lv-brand-forest-subtle: #ebf1ee;  /* Subtle forest tint background (PS-5) */
+  --lv-brand-forest-dark: #0c2b22;    /* Dark Forest Base - Đáy gradient vùng editorial */
+  --lv-brand-forest-deep: #10382d;    /* Mid Forest Green - Trung điểm gradient */
   --lv-brand-forest-tint: #245d4d;    /* Muted Celadon Forest */
 
   /* Gold & Warm Metallic Accents */
-  --lv-accent-gold: #c5a059;          /* Sand Gold - NĂºt CTA chĂ­nh, Ä‘iá»ƒm nháº¥n danh dá»± */
+  --lv-accent-gold: #c5a059;          /* Sand Gold - Nút CTA chính, điểm nhấn danh dự */
   --lv-accent-gold-hover: #b58f47;    /* Sand Gold Hover */
   --lv-accent-gold-active: #a67f3a;   /* Sand Gold Active */
-  --lv-accent-gold-light: #d8c292;    /* Sand Gold Light - Chá»¯ nháº¥n, viá»n má»ng */
+  --lv-accent-gold-subtle: #faf5eb;   /* Light warm gold cream tint (PS-5) */
+  --lv-accent-gold-light: #d8c292;    /* Sand Gold Light - Chữ nhấn, viền mỏng */
   --lv-accent-gold-soft: rgba(197, 160, 89, 0.12); /* Gold Cream Tint */
   --lv-accent-gold-border: rgba(197, 160, 89, 0.28);
   --lv-accent-gold-gradient: linear-gradient(135deg, #d8c292 0%, #c5a059 100%);
@@ -34,37 +37,48 @@
   /* ------------------------------------------------------------------------
      2. CANVAS, SURFACES & BACKGROUNDS (Warm Minimalism)
      ------------------------------------------------------------------------ */
-  --lv-bg-canvas: #f7f5f0;            /* Warm Cream / Soft Ivory - Canvas dá»‹u máº¯t, chá»‘ng chĂ³i */
-  --lv-bg-surface: #ffffff;           /* Bá» máº·t tháº» tráº¯ng ngá»c thuáº§n khiáº¿t */
+  --lv-bg-canvas: #f7f5f0;            /* Warm Cream / Soft Ivory - Canvas dịu mắt, chống chói */
+  --lv-bg-surface: #ffffff;           /* Bề mặt thẻ trắng ngọc thuần khiết */
   --lv-bg-surface-elevated: #ffffff;
-  --lv-bg-surface-subtle: #fcfbf8;    /* Bá» máº·t phá»¥ áº¥m nháº¹ */
-  --lv-bg-muted: #efece6;             /* Ná»n control phá»¥ (Pill, toggle inactive) */
+  --lv-bg-surface-subtle: #fcfbf8;    /* Bề mặt phụ ấm nhẹ */
+  --lv-bg-muted: #efece6;             /* Nền control phụ (Pill, toggle inactive) */
   --lv-bg-glass: rgba(255, 255, 255, 0.94);
 
   /* ------------------------------------------------------------------------
      3. TEXT & TYPOGRAPHIC INKS
      ------------------------------------------------------------------------ */
-  --lv-text-ink: #1f2421;             /* MĂ u chá»¯ ná»™i dung chĂ­nh */
-  --lv-text-heading: #164639;         /* MĂ u tiĂªu Ä‘á» trang nhĂ£ */
-  --lv-text-body: #2b302c;            /* NhĂ£n input, vÄƒn báº£n Ä‘á»c */
-  --lv-text-muted: #6b726b;           /* Phá»¥ Ä‘á», hÆ°á»›ng dáº«n phá»¥ */
+  --lv-text-ink: #1f2421;             /* Màu chữ nội dung chính */
+  --lv-text-heading: #164639;         /* Màu tiêu đề trang nhã */
+  --lv-text-body: #2b302c;            /* Nhãn input, văn bản đọc */
+  --lv-text-muted: #6b726b;           /* Phụ đề, hướng dẫn phụ */
   --lv-text-light: #8c918b;           /* Placeholder, hint */
-  --lv-text-inverse: #ffffff;         /* Chá»¯ sĂ¡ng trĂªn ná»n rá»«ng sĂ¢u */
-  --lv-text-inverse-muted: #c8d8ce;   /* Chá»¯ phá»¥ trĂªn ná»n rá»«ng sĂ¢u */
-  --lv-text-inverse-gold: #d8c292;    /* Chá»¯ vĂ ng nháº¥n trĂªn ná»n rá»«ng sĂ¢u */
+  --lv-text-on-dark: #fcfbf9;         /* Chữ sáng trên nền tối (PS-5) */
+  --lv-text-inverse: #ffffff;         /* Chữ sáng trên nền rừng sâu */
+  --lv-text-inverse-muted: #c8d8ce;   /* Chữ phụ trên nền rừng sâu */
+  --lv-text-inverse-gold: #d8c292;    /* Chữ vàng nhấn trên nền rừng sâu */
 
   /* ------------------------------------------------------------------------
      4. BORDERS & DIVIDERS
      ------------------------------------------------------------------------ */
-  --lv-border-subtle: #eae5dc;        /* Viá»n tháº» máº£nh 1px */
-  --lv-border-medium: #ded9ce;        /* Viá»n trÆ°á»ng nháº­p liá»‡u */
-  --lv-border-hover: #baa375;         /* Viá»n khi hover */
-  --lv-border-focus: #c5a059;         /* Viá»n khi focus (Gold Focus Ring) */
-  --lv-border-inverse: rgba(197, 160, 89, 0.22); /* Viá»n trĂªn ná»n tá»‘i */
+  --lv-border-subtle: #eae5dc;        /* Viền thẻ mảnh 1px */
+  --lv-border-medium: #ded9ce;        /* Viền trường nhập liệu */
+  --lv-border-hover: #baa375;         /* Viền khi hover */
+  --lv-border-focus: #c5a059;         /* Viền khi focus (Gold Focus Ring) */
+  --lv-border-inverse: rgba(197, 160, 89, 0.22); /* Viền trên nền tối */
 
   /* ------------------------------------------------------------------------
-     5. SEMANTIC STATUS FEEDBACK
+     5. SEMANTIC STATUS & FEEDBACK
      ------------------------------------------------------------------------ */
+  /* Direct semantic feedback tokens (PS-5) */
+  --lv-success: #496b5a;
+  --lv-success-bg: #edf3ef;
+  --lv-warning: #b66a35;
+  --lv-warning-bg: #faf2ea;
+  --lv-danger: #a8433d;
+  --lv-danger-bg: #faeeee;
+  --lv-danger-hover: #913530;
+
+  /* Status feedback tokens (PS-1) */
   --lv-status-pending-bg: #f7f9fc;
   --lv-status-pending-text: #2b5788;
   --lv-status-pending-border: #d4e0ee;
@@ -81,7 +95,7 @@
   --lv-status-info-text: #1b6264;
   --lv-status-info-border: #cbe3e4;
 
-  /* Aliases */
+  /* Status Aliases */
   --lv-status-active-bg: var(--lv-status-success-bg);
   --lv-status-active-text: var(--lv-status-success-text);
   --lv-status-active-border: var(--lv-status-success-border);
@@ -91,14 +105,18 @@
   --lv-status-danger-bg: var(--lv-status-error-bg);
   --lv-status-danger-text: var(--lv-status-error-text);
   --lv-status-danger-border: var(--lv-status-error-border);
+  --lv-status-danger: var(--lv-danger);
+  --lv-status-warning: var(--lv-warning);
 
   /* ------------------------------------------------------------------------
      6. RADII & GEOMETRY
      ------------------------------------------------------------------------ */
   --lv-radius-sm: 6px;
-  --lv-radius-md: 10px;               /* Bo gĂ³c trÆ°á»ng nháº­p liá»‡u */
-  --lv-radius-lg: 12px;               /* Bo gĂ³c nĂºt CTA */
-  --lv-radius-xl: 16px;               /* Bo gĂ³c tháº» card & artwork */
+  --lv-radius-control: 10px;          /* Bo góc control/button (PS-5) */
+  --lv-radius-md: 10px;               /* Bo góc trường nhập liệu */
+  --lv-radius-lg: 12px;               /* Bo góc nút CTA */
+  --lv-radius-card: 16px;             /* Bo góc thẻ card (PS-5) */
+  --lv-radius-xl: 16px;               /* Bo góc thẻ card & artwork */
   --lv-radius-2xl: 24px;
   --lv-radius-pill: 9999px;
 
@@ -106,7 +124,9 @@
      7. SHADOWS & ELEVATION
      ------------------------------------------------------------------------ */
   --lv-shadow-sm: 0 1px 3px rgba(22, 70, 57, 0.04);
+  --lv-shadow-subtle: 0 1px 3px rgba(32, 33, 31, 0.05);
   --lv-shadow-card: 0 4px 20px rgba(22, 70, 57, 0.05);
+  --lv-shadow-modal: 0 16px 36px rgba(22, 70, 57, 0.12);
   --lv-shadow-cta: 0 4px 14px rgba(197, 160, 89, 0.25);
   --lv-shadow-cta-hover: 0 6px 18px rgba(197, 160, 89, 0.35);
   --lv-shadow-elevated: 0 12px 36px rgba(22, 70, 57, 0.08);
@@ -122,11 +142,11 @@
      9. MOTION DESIGN TOKENS (Henedo Editorial Motion System)
      ------------------------------------------------------------------------ */
   /* Timing Durations */
-  --lv-motion-duration-fast: 160ms;        /* Fast interactions: hover, active press (120â€“180ms) */
-  --lv-motion-duration-standard: 220ms;    /* Standard transitions: colors, subtle lifts (180â€“260ms) */
-  --lv-motion-duration-modal: 280ms;       /* Modal backdrops and dialog windows (220â€“320ms) */
-  --lv-motion-duration-entrance: 450ms;    /* Page & section entrance reveals (350â€“550ms) */
-  --lv-motion-stagger-step: 75ms;          /* Stagger offset between consecutive items (60â€“90ms) */
+  --lv-motion-duration-fast: 160ms;        /* Fast interactions: hover, active press (120–180ms) */
+  --lv-motion-duration-standard: 220ms;    /* Standard transitions: colors, subtle lifts (180–260ms) */
+  --lv-motion-duration-modal: 280ms;       /* Modal backdrops and dialog windows (220–320ms) */
+  --lv-motion-duration-entrance: 450ms;    /* Page & section entrance reveals (350–550ms) */
+  --lv-motion-stagger-step: 75ms;          /* Stagger offset between consecutive items (60–90ms) */
 
   /* Easing Curves */
   --lv-motion-ease-smooth: cubic-bezier(0.22, 1, 0.36, 1); /* Refined deceleration curve for editorial poise */

@@ -7,8 +7,8 @@ import './AppShell.css';
  * Architecture notes:
  * - Supports modular routes conforming to role-based access control (RBAC).
  * - Routes are conditionally active only when their corresponding Jira capability has been implemented.
- * - Current active scope: PS-3 (Digital Heritage Vault).
- * - Future capability slots (Assets, Wills, Beneficiaries, DMS) are reserved at schema level but strictly not exposed in the UI.
+ * - Current active scope: PS-3 Vault, PS-4 DMS, PS-5 Assets.
+ * - Future capability slots (Wills, Beneficiaries) are reserved at schema level but strictly not exposed in the UI.
  */
 const NAVIGATION_REGISTRY = [
   {
@@ -27,10 +27,10 @@ const NAVIGATION_REGISTRY = [
   },
   {
     id: 'assets',
-    jiraTicket: 'PS-FUTURE',
+    jiraTicket: 'PS-5',
     labelVi: 'Danh mục tài sản di sản',
     labelEn: 'Heritage Assets',
-    status: 'PLANNED',
+    status: 'ACTIVE',
   },
   {
     id: 'wills',
@@ -249,7 +249,9 @@ export default function AppShell({
               <span className="lv-crumb-dim">{t.breadcrumbHome}</span>
               <span className="lv-crumb-sep" aria-hidden="true">/</span>
               <span className="lv-crumb-active">
-                {currentTab === 'dms'
+                {currentTab === 'assets'
+                  ? (lang === 'en' ? 'Asset Inventory' : 'Danh sách tài sản')
+                  : currentTab === 'dms'
                   ? (lang === 'en' ? "Dead Man's Switch" : 'Giám sát hoạt động')
                   : t.breadcrumbCurrent}
               </span>
