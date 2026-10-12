@@ -44,3 +44,19 @@ it('does not expose protected asset UI in production through a preview URL', () 
   expect(screen.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeInTheDocument()
   expect(assetService.getAssets).not.toHaveBeenCalled()
 })
+
+
+it('connects Will upload through the shared shell and global language', () => {
+  window.history.replaceState({}, '', '/assets?preview=true'); render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'Hồ sơ di chúc số' }));
+  expect(window.location.pathname).toBe('/wills'); expect(window.location.search).toBe('?preview=true');
+  expect(screen.getByRole('heading', { name: 'Lưu bản di chúc số hóa' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'EN' }));
+  expect(screen.getByRole('heading', { name: 'Store a digitized will' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Refresh records' })).not.toBeInTheDocument();
+});
+
+it('blocks protected Will upload in production even with preview URL', () => {
+  vi.stubEnv('PROD', true); window.history.replaceState({}, '', '/wills?preview=true'); render(<App />);
+  expect(screen.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeInTheDocument();
+});

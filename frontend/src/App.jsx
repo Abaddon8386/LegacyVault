@@ -5,6 +5,7 @@ import VaultOverviewPage from './pages/vault/VaultOverviewPage.jsx';
 import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
 import { translations } from './i18n/translations';
 import { AssetManagementPage } from './pages/assets/AssetManagementPage';
+import WillUploadPage from './pages/wills/WillUploadPage.jsx';
 import AppShell from './components/layout/AppShell.jsx';
 
 function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
@@ -172,8 +173,10 @@ export default function App() {
   const isDmsRoute = currentPath === '/dms';
   const isAssetRoute = currentPath === '/assets' || currentPath === '/dashboard';
 
-  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute)) {
-    const activeTab = isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
+  const isWillRoute = currentPath === '/wills' || currentPath === '/wills/upload';
+
+  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute || isWillRoute)) {
+    const activeTab = isWillRoute ? 'wills' : isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
 
     return (
       <div className="lv-app-root">
@@ -182,10 +185,12 @@ export default function App() {
           lang={lang}
           onToggleLang={setLang}
           onLogout={() => navigateTo('/login')}
-          onRefresh={handleRefresh}
+          onRefresh={isWillRoute ? undefined : handleRefresh}
           isRefreshing={isRefreshing}
           onNavigateTab={(tab) => {
-            if (tab === 'vault') {
+            if (tab === 'wills') {
+              navigateTo(hasPreviewParam ? '/wills?preview=true' : '/wills');
+            } else if (tab === 'vault') {
               navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
             } else if (tab === 'assets') {
               navigateTo(hasPreviewParam ? '/assets?preview=true' : '/assets');
@@ -194,7 +199,9 @@ export default function App() {
             }
           }}
         >
-          {isAssetRoute ? (
+          {isWillRoute ? (
+            <WillUploadPage key={hasPreviewParam ? 'preview-wills' : 'live-wills'} lang={lang} isDevPreview={hasPreviewParam} />
+          ) : isAssetRoute ? (
             <AssetManagementPage
               key={hasPreviewParam ? 'preview-assets' : 'live-assets'}
               t={translations[lang]} lang={lang}
