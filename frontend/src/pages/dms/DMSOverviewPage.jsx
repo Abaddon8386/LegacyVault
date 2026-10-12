@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   fetchDmsConfig,
   saveDmsConfig,
@@ -40,6 +40,9 @@ export default function DMSOverviewPage({
   const [checkInNotice, setCheckInNotice] = useState('');
   const [checkInError, setCheckInError] = useState('');
 
+  // Info popover state (subtle replacement for giant technical warning banner)
+  const [showInfoPopover, setShowInfoPopover] = useState(false);
+
   // Data fetching
   useEffect(() => {
     let ignore = false;
@@ -49,7 +52,7 @@ export default function DMSOverviewPage({
     fetchDmsConfig({ scenario, isDevPreview: isDevPreviewActive, lang })
       .then((data) => {
         if (!ignore) {
-          setDmsData(data);
+          setDmsData(data ? { ...data, snapshotTimestamp: Date.now() } : null);
           if (data && data.checkIntervalDays) {
             setIntervalInput(data.checkIntervalDays);
           }
@@ -127,7 +130,7 @@ export default function DMSOverviewPage({
           lang,
         }
       );
-      setDmsData(updated);
+      setDmsData(updated ? { ...updated, snapshotTimestamp: Date.now() } : null);
       setIsConfiguringNew(false);
       setSaveSuccess(
         updated.message ||
@@ -158,7 +161,7 @@ export default function DMSOverviewPage({
         scenario,
         lang,
       });
-      setDmsData(result);
+      setDmsData(result ? { ...result, snapshotTimestamp: Date.now() } : null);
       setCheckInNotice(
         result.message ||
           (lang === 'en'
@@ -184,82 +187,108 @@ export default function DMSOverviewPage({
     setSaveError('');
   };
 
+  // Calculate cycle progress if timestamps are valid
+  const cycleProgress = useMemo(() => {
+    if (!dmsData || !dmsData.lastCheckInAt || !dmsData.nextCheckAt) return null;
+    const start = new Date(dmsData.lastCheckInAt).getTime();
+    const end = new Date(dmsData.nextCheckAt).getTime();
+    const refTime = dmsData.snapshotTimestamp;
+    if (!refTime || isNaN(start) || isNaN(end) || end <= start) return null;
+    if (refTime <= start) return 0;
+    if (refTime >= end) return 100;
+    return Math.min(100, Math.max(0, Math.round(((refTime - start) / (end - start)) * 100)));
+  }, [dmsData]);
+
   const content = {
     vi: {
       eyebrow: 'GIÁM SÁT HOẠT ĐỘNG ĐỊNH KỲ',
       pageTitle: "Giám sát hoạt động (Dead Man's Switch)",
       pageSubtitle:
-        'Thiết lập chu kỳ kiểm tra hoạt động để hệ thống định kỳ theo dõi tín hiệu hiện diện của bạn.',
-      safetyTitle: 'Quy chuẩn an toàn LV-DEATH-001',
-      safetyText:
-        'Việc bỏ lỡ lịch kiểm tra hoạt động không đồng nghĩa với việc xác nhận chủ sở hữu đã qua đời. Kho di sản tuyệt đối không tự động mở khóa, không giải mã dữ liệu và không bàn giao tài sản khi quá hạn check-in.',
+        'Thiết lập chu kỳ kiểm tra định kỳ để hệ thống theo dõi tín hiệu hiện diện và chủ động bảo vệ kho di sản của bạn.',
+      infoBtnLabel: 'Thông tin bảo vệ di sản',
+      infoPopoverTitle: 'Bảo vệ kho di sản số',
+      infoPopoverText:
+        'Việc trễ hạn kiểm tra hoạt động không đồng nghĩa với việc xác nhận chủ sở hữu đã qua đời. Kho di sản của bạn luôn được bảo vệ nghiêm ngặt và tuyệt đối không tự động mở khóa, không giải mã hay bàn giao tài sản khi quá hạn.',
       statusCardTitle: 'Trạng thái giám sát hiện hành',
       statusCardSub: 'Thông tin chu kỳ và các mốc thời gian kiểm tra sự sống',
+      metricStatus: 'Trạng thái theo dõi',
       metricNextCheck: 'Hạn kiểm tra tiếp theo',
       metricNextCheckSub: 'Thời điểm cần gửi xác nhận hoạt động',
-      metricInterval: 'Chu kỳ kiểm tra hiện hành',
-      metricIntervalSub: 'Tần suất giữa các kỳ kiểm tra',
-      metricCheckInAction: 'Xác nhận sự sống',
-      metricCheckInActionSub: 'Gửi tín hiệu trực tuyến để làm mới bộ đếm chu kỳ',
-      checkInBtn: 'Xác nhận còn hoạt động',
-      checkingInBtn: 'Đang xác nhận…',
-      checkInDisabledTriggered: 'Không khả dụng khi đang ở trạng thái kích hoạt quá hạn (DMS_NOT_MONITORING).',
+      metricInterval: 'Chu kỳ kiểm tra',
+      metricIntervalSub: 'Tần suất giữa các lần kiểm tra',
       metricLastCheck: 'Xác nhận gần nhất',
       metricLastCheckSub: 'Ghi nhận tín hiệu kiểm tra trước đó',
+      cycleProgressTitle: 'Tiến trình chu kỳ hiện tại',
+      cycleProgressElapsed: 'Đã trôi qua',
       daysUnit: 'ngày',
-      triggeredAlertTitle: 'Cảnh báo: Đã quá hạn kiểm tra hoạt động (TRIGGERED)',
+      actionCardTitle: 'Xác nhận hiện diện trực tuyến',
+      actionCardSub: 'Gửi tín hiệu xác nhận để làm mới bộ đếm thời gian chu kỳ tiếp theo',
+      checkInBtn: 'Xác nhận còn hoạt động',
+      checkingInBtn: 'Đang xác nhận…',
+      checkInDisabledTriggered: 'Chức năng tạm khóa trong thời gian kích hoạt quá hạn.',
+      checkInReadySub: 'Nhấp để xác nhận bạn vẫn đang hoạt động bình thường.',
+      triggeredAlertTitle: 'Thông báo: Đã quá hạn xác nhận hoạt động',
       triggeredAlertDesc:
-        'Bạn đã bỏ lỡ thời hạn kiểm tra hoạt động định kỳ. Hệ thống đang kích hoạt quy trình theo dõi và chờ bạn phản hồi. Kho di sản của bạn vẫn được niêm phong an toàn và không tự động mở khóa cho bất kỳ ai.',
-      triggeredDeadlinePrefix: 'Hạn chót thời gian ân hạn:',
+        'Đã quá hạn xác nhận hoạt động. Trạng thái này không đồng nghĩa với việc xác nhận chủ sở hữu đã qua đời. Kho di sản vẫn được bảo vệ.',
+      triggeredDeadlinePrefix: 'Thời hạn ân hạn:',
       configCardTitle: 'Cấu hình chu kỳ kiểm tra',
       configCardSub:
-        'Lựa chọn khoảng thời gian giữa các lần hệ thống yêu cầu bạn xác nhận hoạt động.',
-      presetsLabel: 'Lựa chọn nhanh đề xuất:',
-      inputLabel: 'Chu kỳ kiểm tra định kỳ:',
-      inputHelper: 'Chu kỳ tính theo số ngày (số nguyên dương lớn hơn 0) giữa các lần kiểm tra hoạt động.',
+        'Tùy chỉnh khoảng thời gian giữa các lần hệ thống yêu cầu bạn gửi tín hiệu xác nhận.',
+      presetsLabel: 'Gợi ý chu kỳ đề xuất:',
+      presetsHelper: 'Các mức ngày trên là gợi ý nhanh; bạn có thể tùy chọn số ngày bất kỳ phù hợp.',
+      inputLabel: 'Số ngày chu kỳ:',
+      inputHelper: 'Nhập số nguyên ngày (lớn hơn 0) giữa các lần kiểm tra.',
       saveBtn: 'Lưu cấu hình chu kỳ',
       savingBtn: 'Đang lưu cấu hình…',
       resetBtn: 'Đặt lại',
       emptyBadge: 'CHƯA CẤU HÌNH',
       emptyTitle: 'Chưa cấu hình chu kỳ kiểm tra',
       emptyDesc:
-        'Kho di sản chưa được thiết lập lịch kiểm tra hoạt động định kỳ. Hãy cấu hình chu kỳ để hệ thống bắt đầu theo dõi các mốc check-in của bạn.',
+        'Kho di sản chưa được thiết lập lịch kiểm tra hoạt động định kỳ. Hãy thiết lập chu kỳ để hệ thống bắt đầu theo dõi các mốc check-in của bạn.',
       emptyAction: 'Thiết lập chu kỳ ngay',
       devToolbarLabel: 'Kịch bản kiểm thử giao diện:',
-      devToolbarNotice: 'Công cụ mô phỏng dành riêng cho môi trường kiểm thử (?preview=true).',
+      devToolbarNotice: 'Công cụ mô phỏng giao diện (?preview=true).',
+      policyFootnote:
+        'Nguyên tắc bảo vệ di sản: Việc quá hạn kiểm tra không đồng nghĩa với xác nhận qua đời. Kho di sản luôn được niêm phong an toàn và không tự động mở khóa.',
     },
     en: {
       eyebrow: 'PERIODIC ACTIVITY MONITORING',
       pageTitle: "Dead Man's Switch (Activity Monitor)",
       pageSubtitle:
-        'Configure check-in intervals so the system can track scheduled presence confirmations according to your settings.',
-      safetyTitle: 'Safety Standard LV-DEATH-001',
-      safetyText:
-        'Missing a scheduled check-in deadline does not confirm that the owner has passed away. Heritage vaults are never automatically unlocked, decrypted, or transferred solely due to missed check-ins.',
+        'Configure periodic check-in intervals to monitor presence signals and safeguard your heritage vault.',
+      infoBtnLabel: 'Heritage Protection Info',
+      infoPopoverTitle: 'Heritage Vault Protection',
+      infoPopoverText:
+        'Missing an activity check-in deadline does not confirm owner decease. Heritage vaults remain securely protected and are never automatically unlocked, decrypted, or transferred solely due to missed check-ins.',
       statusCardTitle: 'Current Vitality Status',
       statusCardSub: 'Monitoring schedule and countdown threshold parameters',
+      metricStatus: 'Monitoring Status',
       metricNextCheck: 'Next Check-in Deadline',
       metricNextCheckSub: 'Scheduled time for vitality confirmation prompt',
-      metricInterval: 'Current Check-in Interval',
+      metricInterval: 'Check-in Interval',
       metricIntervalSub: 'Countdown frequency between periodic checks',
-      metricCheckInAction: 'Vitality Confirmation',
-      metricCheckInActionSub: 'Transmit presence signal to refresh check-in timer',
-      checkInBtn: "Confirm Vitality (I'm active)",
-      checkingInBtn: 'Confirming…',
-      checkInDisabledTriggered: 'Unavailable while in triggered state (DMS_NOT_MONITORING).',
       metricLastCheck: 'Last Activity Confirmed',
       metricLastCheckSub: 'Previous successful presence verification',
+      cycleProgressTitle: 'Current Cycle Progress',
+      cycleProgressElapsed: 'Elapsed',
       daysUnit: 'days',
-      triggeredAlertTitle: 'Alert: Check-in Deadline Expired (TRIGGERED)',
+      actionCardTitle: 'Online Vitality Confirmation',
+      actionCardSub: 'Transmit an active presence signal to refresh your upcoming check-in timer',
+      checkInBtn: "Confirm Vitality (I'm active)",
+      checkingInBtn: 'Confirming…',
+      checkInDisabledTriggered: 'Temporarily disabled during overdue grace period.',
+      checkInReadySub: 'Click to confirm you are active and refresh the cycle timer.',
+      triggeredAlertTitle: 'Notice: Vitality Check-in Overdue',
       triggeredAlertDesc:
-        'You have missed the scheduled vitality check-in deadline. The system has initiated the grace monitoring protocol. Your heritage vault remains securely sealed and is never automatically unlocked.',
+        'Vitality confirmation is overdue. This status does not signify owner decease. Your heritage vault remains securely protected.',
       triggeredDeadlinePrefix: 'Grace period deadline:',
       configCardTitle: 'Configure Check-in Interval',
       configCardSub:
-        'Select the duration between required activity check-ins.',
+        'Customize the duration between required activity check-in confirmations.',
       presetsLabel: 'Suggested Presets:',
-      inputLabel: 'Check-in Interval:',
-      inputHelper: 'Interval measured in positive integer days (> 0) between scheduled check-ins.',
+      presetsHelper: 'The presets above are quick suggestions; you can enter any custom day count.',
+      inputLabel: 'Interval in Days:',
+      inputHelper: 'Enter a positive integer number of days (> 0) between checks.',
       saveBtn: 'Save Interval Settings',
       savingBtn: 'Saving Settings…',
       resetBtn: 'Reset',
@@ -269,7 +298,9 @@ export default function DMSOverviewPage({
         'Your heritage vault currently has no active check-in schedule. Configure an interval to begin tracking your scheduled check-ins.',
       emptyAction: 'Configure Interval Now',
       devToolbarLabel: 'UI Test Scenario:',
-      devToolbarNotice: 'Development utility for interface verification (?preview=true).',
+      devToolbarNotice: 'Development simulation utility (?preview=true).',
+      policyFootnote:
+        'Heritage Protection Principle: Missed check-ins do not confirm decease. Heritage vaults remain securely sealed and are never automatically unlocked.',
     },
   };
 
@@ -311,7 +342,7 @@ export default function DMSOverviewPage({
     <div className="lv-dms-page">
       {/* Dev Simulation Toolbar — Strictly gated for DEV environment with ?preview=true */}
       {Boolean(import.meta.env.DEV && showDevToolbar) && (
-        <aside className="lv-dms-dev-toolbar" aria-label="Bộ điều khiển kịch bản thử nghiệm">
+        <aside className="lv-dms-dev-toolbar lv-dms-stagger" style={{ '--stagger': 0 }} aria-label="Bộ điều khiển kịch bản thử nghiệm">
           <div className="lv-dms-dev-toolbar-inner">
             <label htmlFor="dms-scenario-select" className="lv-dms-dev-label">
               <span className="lv-dms-dev-icon" aria-hidden="true">⚙</span>
@@ -336,48 +367,74 @@ export default function DMSOverviewPage({
 
       {/* Toast / Action Notice */}
       {checkInNotice && (
-        <div className="lv-dms-toast-notice" role="status" aria-live="polite">
+        <div className="lv-dms-toast-notice lv-dms-stagger" style={{ '--stagger': 0 }} role="status" aria-live="polite">
           <span className="lv-dms-toast-icon" aria-hidden="true">✓</span>
           <span>{checkInNotice}</span>
         </div>
       )}
 
       {checkInError && (
-        <div className="lv-dms-toast-error" role="alert" aria-live="polite">
+        <div className="lv-dms-toast-error lv-dms-stagger" style={{ '--stagger': 0 }} role="alert" aria-live="polite">
           <span className="lv-dms-toast-icon" aria-hidden="true">!</span>
           <span>{checkInError}</span>
         </div>
       )}
 
       {/* Page Header */}
-      <header className="lv-dms-header">
-        <div className="lv-dms-header-titles">
-          <span className="lv-dms-eyebrow">{t.eyebrow}</span>
-          <h1 className="lv-dms-title">{t.pageTitle}</h1>
-          <p className="lv-dms-subtitle">{t.pageSubtitle}</p>
-        </div>
+      <header className="lv-dms-header lv-dms-stagger" style={{ '--stagger': 1 }}>
+        <div className="lv-dms-header-top-row">
+          <div className="lv-dms-header-titles">
+            <span className="lv-dms-eyebrow">{t.eyebrow}</span>
+            <div className="lv-dms-title-row">
+              <h1 className="lv-dms-title">{t.pageTitle}</h1>
+              {/* Discrete Info Popover Toggle */}
+              <div className="lv-dms-info-wrap">
+                <button
+                  type="button"
+                  className="lv-dms-info-trigger"
+                  onClick={() => setShowInfoPopover((prev) => !prev)}
+                  aria-expanded={showInfoPopover}
+                  aria-label={t.infoBtnLabel}
+                  title={t.infoBtnLabel}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span className="lv-dms-info-btn-text">{t.infoBtnLabel}</span>
+                </button>
 
-        {/* Important Safety Standard Callout (LV-DEATH-001) */}
-        <aside className="lv-dms-safety-card" aria-label={t.safetyTitle}>
-          <div className="lv-dms-safety-icon" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+                {showInfoPopover && (
+                  <div className="lv-dms-info-popover" role="dialog" aria-label={t.infoPopoverTitle}>
+                    <div className="lv-dms-info-popover-header">
+                      <span className="lv-dms-info-popover-title">
+                        <span aria-hidden="true">🛡️</span> {t.infoPopoverTitle}
+                      </span>
+                      <button
+                        type="button"
+                        className="lv-dms-info-popover-close"
+                        onClick={() => setShowInfoPopover(false)}
+                        aria-label="Đóng"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="lv-dms-info-popover-text">{t.infoPopoverText}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="lv-dms-subtitle">{t.pageSubtitle}</p>
           </div>
-          <div className="lv-dms-safety-text">
-            <strong>{t.safetyTitle}: </strong>
-            <span>{t.safetyText}</span>
-          </div>
-        </aside>
+        </div>
       </header>
 
       {/* TRIGGERED / GRACE PERIOD Alert Banner */}
       {isTriggered && (
-        <section className="lv-dms-triggered-banner" role="alert" aria-live="polite">
+        <section className="lv-dms-triggered-banner lv-dms-stagger" style={{ '--stagger': 2 }} role="alert" aria-live="polite">
           <div className="lv-dms-triggered-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -397,7 +454,7 @@ export default function DMSOverviewPage({
 
       {/* Main Content Area */}
       {isNotConfigured && !isConfiguringNew ? (
-        <section className="lv-dms-empty-panel" aria-label={t.emptyTitle}>
+        <section className="lv-dms-empty-panel lv-dms-stagger" style={{ '--stagger': 2 }} aria-label={t.emptyTitle}>
           <div className="lv-dms-empty-icon-wrap" aria-hidden="true">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="12" cy="12" r="10" />
@@ -411,17 +468,17 @@ export default function DMSOverviewPage({
             type="button"
             className="lv-dms-empty-cta"
             onClick={() => setIsConfiguringNew(true)}
-            maxOffset={4}
+            maxOffset={3}
           >
             <span>{t.emptyAction}</span>
             <span aria-hidden="true">→</span>
           </MagneticButton>
         </section>
       ) : (
-        <>
+        <div className="lv-dms-content-grid">
           {/* Status Overview Card */}
           {dmsData && (
-            <section className="lv-dms-card" aria-labelledby="dms-overview-heading">
+            <section className="lv-dms-card lv-dms-stagger" style={{ '--stagger': 2 }} aria-labelledby="dms-overview-heading">
               <div className="lv-dms-card-header">
                 <div className="lv-dms-card-heading-group">
                   <div className="lv-dms-card-icon-wrap" aria-hidden="true">
@@ -438,70 +495,145 @@ export default function DMSOverviewPage({
                   </div>
                 </div>
                 <div className="lv-dms-badge-group">
-                  <StatusBadge status={dmsData.status} lang={lang} />
+                  <div className="lv-dms-status-badge-wrap">
+                    {dmsData.status === 'MONITORING' ? (
+                      <span className="lv-dms-status-pulse-dot" aria-hidden="true" />
+                    ) : isTriggered ? (
+                      <span className="lv-dms-status-triggered-dot" aria-hidden="true" />
+                    ) : null}
+                    <StatusBadge status={dmsData.status} lang={lang} />
+                  </div>
                   {dmsData.isSimulation && (
                     <span className="lv-dms-simulation-tag">MÔ PHỎNG (DEV)</span>
                   )}
                 </div>
               </div>
 
-              {/* 4-Metric Grid */}
+              {/* Read-Only Summary Metric Cards */}
               <div className="lv-dms-metrics-grid">
-                {/* Metric 1: Next Check-in Deadline */}
+                {/* Metric 1: Trạng thái theo dõi */}
+                <div className="lv-dms-metric-item">
+                  <span className="lv-dms-metric-label">{t.metricStatus}</span>
+                  <div className="lv-dms-metric-value-row">
+                    <span className="lv-dms-metric-value">
+                      {dmsData.status === 'MONITORING'
+                        ? (lang === 'en' ? 'Monitoring' : 'Đang theo dõi')
+                        : isTriggered
+                        ? (lang === 'en' ? 'Triggered (Grace)' : 'Kích hoạt chờ phản hồi')
+                        : dmsData.status}
+                    </span>
+                  </div>
+                  <span className="lv-dms-metric-sub">
+                    {dmsData.status === 'MONITORING'
+                      ? (lang === 'en' ? 'Active check-in countdown running' : 'Bộ đếm chu kỳ đang hoạt động')
+                      : (lang === 'en' ? 'Pending response or grace countdown' : 'Chờ phản hồi trong thời gian ân hạn')}
+                  </span>
+                </div>
+
+                {/* Metric 2: Next Check-in Deadline */}
                 <div className="lv-dms-metric-item">
                   <span className="lv-dms-metric-label">{t.metricNextCheck}</span>
-                  <span className="lv-dms-metric-value">
-                    {formatDmsDate(dmsData.nextCheckAt, lang)}
-                  </span>
+                  <div className="lv-dms-metric-value-row">
+                    <span className="lv-dms-metric-value">
+                      {formatDmsDate(dmsData.nextCheckAt, lang)}
+                    </span>
+                  </div>
                   <span className="lv-dms-metric-sub">{t.metricNextCheckSub}</span>
                 </div>
 
-                {/* Metric 2: Current Interval */}
+                {/* Metric 3: Current Interval */}
                 <div className="lv-dms-metric-item">
                   <span className="lv-dms-metric-label">{t.metricInterval}</span>
-                  <span className="lv-dms-metric-value">
-                    {dmsData.checkIntervalDays
-                      ? `${dmsData.checkIntervalDays} ${t.daysUnit}`
-                      : '—'}
-                  </span>
-                  <span className="lv-dms-metric-sub">{t.metricIntervalSub}</span>
-                </div>
-
-                {/* Metric 3: Vitality Check-in Action */}
-                <div className="lv-dms-metric-item lv-dms-metric-action-cell">
-                  <span className="lv-dms-metric-label">{t.metricCheckInAction}</span>
-                  <div className="lv-dms-action-wrap">
-                    <MagneticButton
-                      type="button"
-                      className={`lv-dms-checkin-btn ${isTriggered ? 'is-disabled' : ''}`}
-                      onClick={handleCheckIn}
-                      disabled={isCheckingIn || isTriggered}
-                      maxOffset={3}
-                      aria-label={t.checkInBtn}
-                    >
-                      {isCheckingIn && <span className="lv-btn-spinner" aria-hidden="true" />}
-                      <span>{isCheckingIn ? t.checkingInBtn : t.checkInBtn}</span>
-                    </MagneticButton>
+                  <div className="lv-dms-metric-value-row">
+                    <span className="lv-dms-metric-value">
+                      {dmsData.checkIntervalDays
+                        ? `${dmsData.checkIntervalDays} ${t.daysUnit}`
+                        : '—'}
+                    </span>
                   </div>
-                  <span className="lv-dms-metric-sub">
-                    {isTriggered ? t.checkInDisabledTriggered : t.metricCheckInActionSub}
-                  </span>
+                  <span className="lv-dms-metric-sub">{t.metricIntervalSub}</span>
                 </div>
 
                 {/* Metric 4: Last Check-in Time */}
                 <div className="lv-dms-metric-item">
                   <span className="lv-dms-metric-label">{t.metricLastCheck}</span>
-                  <span className="lv-dms-metric-value">
-                    {formatDmsDate(dmsData.lastCheckInAt, lang)}
-                  </span>
+                  <div className="lv-dms-metric-value-row">
+                    <span className="lv-dms-metric-value">
+                      {formatDmsDate(dmsData.lastCheckInAt, lang)}
+                    </span>
+                  </div>
                   <span className="lv-dms-metric-sub">{t.metricLastCheckSub}</span>
+                </div>
+              </div>
+
+              {/* Cycle Timeline / Progress Indicator */}
+              {cycleProgress !== null && (
+                <div className="lv-dms-cycle-timeline">
+                  <div className="lv-dms-cycle-timeline-header">
+                    <span className="lv-dms-cycle-timeline-label">{t.cycleProgressTitle}</span>
+                    <span className="lv-dms-cycle-timeline-percent">{cycleProgress}% {t.cycleProgressElapsed}</span>
+                  </div>
+                  <div
+                    className="lv-dms-cycle-progress-track"
+                    role="progressbar"
+                    aria-valuenow={cycleProgress}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-label={t.cycleProgressTitle}
+                  >
+                    <div
+                      className="lv-dms-cycle-progress-bar"
+                      style={{ width: `${cycleProgress}%` }}
+                    />
+                  </div>
+                  <div className="lv-dms-cycle-timeline-bounds">
+                    <span>{formatDmsDate(dmsData.lastCheckInAt, lang)}</span>
+                    <span>{formatDmsDate(dmsData.nextCheckAt, lang)}</span>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Dedicated Vitality Action Card (Tách biệt rõ ràng với vùng thông tin chỉ đọc) */}
+          {dmsData && (
+            <section className="lv-dms-card lv-dms-action-card lv-dms-stagger" style={{ '--stagger': 3 }} aria-labelledby="dms-action-heading">
+              <div className="lv-dms-action-card-inner">
+                <div className="lv-dms-action-text-col">
+                  <div className="lv-dms-action-icon-wrap" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 id="dms-action-heading" className="lv-dms-action-title">
+                      {t.actionCardTitle}
+                    </h2>
+                    <p className="lv-dms-action-sub">
+                      {isTriggered ? t.checkInDisabledTriggered : t.actionCardSub}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="lv-dms-action-button-col">
+                  <MagneticButton
+                    type="button"
+                    className={`lv-dms-checkin-btn ${isTriggered ? 'is-disabled' : ''}`}
+                    onClick={handleCheckIn}
+                    disabled={isCheckingIn || isTriggered}
+                    maxOffset={3}
+                    aria-label={t.checkInBtn}
+                  >
+                    {isCheckingIn && <span className="lv-btn-spinner" aria-hidden="true" />}
+                    <span>{isCheckingIn ? t.checkingInBtn : t.checkInBtn}</span>
+                  </MagneticButton>
                 </div>
               </div>
             </section>
           )}
 
           {/* Configure Interval Form Card */}
-          <section className="lv-dms-card" aria-labelledby="dms-config-heading">
+          <section className="lv-dms-card lv-dms-config-card lv-dms-stagger" style={{ '--stagger': 4 }} aria-labelledby="dms-config-heading">
             <div className="lv-dms-card-header">
               <div className="lv-dms-card-heading-group">
                 <div className="lv-dms-card-icon-wrap" aria-hidden="true">
@@ -543,7 +675,10 @@ export default function DMSOverviewPage({
             <form className="lv-dms-form-group" onSubmit={handleSaveInterval} noValidate>
               {/* Recommended Presets */}
               <div className="lv-dms-presets-section">
-                <span className="lv-dms-presets-label">{t.presetsLabel}</span>
+                <div className="lv-dms-presets-header">
+                  <span className="lv-dms-presets-label">{t.presetsLabel}</span>
+                  <span className="lv-dms-presets-hint">{t.presetsHelper}</span>
+                </div>
                 <div className="lv-dms-presets-grid" role="group" aria-label={t.presetsLabel}>
                   {INTERVAL_PRESETS.map((preset) => {
                     const isActive = Number(intervalInput) === preset.days;
@@ -562,68 +697,76 @@ export default function DMSOverviewPage({
                 </div>
               </div>
 
-              {/* Custom Input */}
-              <div className="lv-dms-input-section">
-                <div className="lv-dms-input-label-row">
+              {/* Custom Input & Action Cluster */}
+              <div className="lv-dms-input-cluster">
+                <div className="lv-dms-input-col">
                   <label htmlFor="dms-interval-input" className="lv-dms-input-label">
                     {t.inputLabel}
                   </label>
+                  <div className="lv-dms-input-wrap">
+                    <input
+                      id="dms-interval-input"
+                      name="check_interval_days"
+                      type="number"
+                      min="1"
+                      step="1"
+                      className={`lv-dms-input ${fieldErrors.check_interval_days ? 'is-invalid' : ''}`}
+                      value={intervalInput}
+                      onChange={handleIntervalInputChange}
+                      disabled={isSaving}
+                      aria-invalid={Boolean(fieldErrors.check_interval_days)}
+                      aria-describedby={
+                        fieldErrors.check_interval_days
+                          ? 'dms-interval-error'
+                          : 'dms-interval-helper'
+                      }
+                    />
+                    <span className="lv-dms-input-unit">{t.daysUnit}</span>
+                  </div>
+
+                  {fieldErrors.check_interval_days ? (
+                    <span id="dms-interval-error" className="lv-dms-field-error" role="alert">
+                      {fieldErrors.check_interval_days}
+                    </span>
+                  ) : (
+                    <span id="dms-interval-helper" className="lv-dms-input-helper">
+                      {t.inputHelper}
+                    </span>
+                  )}
                 </div>
-                <div className="lv-dms-input-wrap">
-                  <input
-                    id="dms-interval-input"
-                    name="check_interval_days"
-                    type="number"
-                    min="1"
-                    step="1"
-                    className={`lv-dms-input ${fieldErrors.check_interval_days ? 'is-invalid' : ''}`}
-                    value={intervalInput}
-                    onChange={handleIntervalInputChange}
+
+                {/* Action Buttons */}
+                <div className="lv-dms-form-actions">
+                  <MagneticButton
+                    type="submit"
+                    className="lv-dms-submit-btn"
                     disabled={isSaving}
-                    aria-invalid={Boolean(fieldErrors.check_interval_days)}
-                    aria-describedby={
-                      fieldErrors.check_interval_days
-                        ? 'dms-interval-error'
-                        : 'dms-interval-helper'
-                    }
-                  />
-                  <span className="lv-dms-input-unit">{t.daysUnit}</span>
+                    maxOffset={2}
+                  >
+                    {isSaving && <span className="lv-btn-spinner" aria-hidden="true" />}
+                    <span>{isSaving ? t.savingBtn : t.saveBtn}</span>
+                  </MagneticButton>
+                  <button
+                    type="button"
+                    className="lv-dms-reset-btn"
+                    onClick={handleResetForm}
+                    disabled={isSaving}
+                  >
+                    {t.resetBtn}
+                  </button>
                 </div>
-
-                {fieldErrors.check_interval_days ? (
-                  <span id="dms-interval-error" className="lv-dms-field-error" role="alert">
-                    {fieldErrors.check_interval_days}
-                  </span>
-                ) : (
-                  <span id="dms-interval-helper" className="lv-dms-input-helper">
-                    {t.inputHelper}
-                  </span>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="lv-dms-form-actions">
-                <MagneticButton
-                  type="submit"
-                  className="lv-dms-submit-btn"
-                  disabled={isSaving}
-                  maxOffset={3}
-                >
-                  {isSaving && <span className="lv-btn-spinner" aria-hidden="true" />}
-                  <span>{isSaving ? t.savingBtn : t.saveBtn}</span>
-                </MagneticButton>
-                <button
-                  type="button"
-                  className="lv-dms-reset-btn"
-                  onClick={handleResetForm}
-                  disabled={isSaving}
-                >
-                  {t.resetBtn}
-                </button>
               </div>
             </form>
           </section>
-        </>
+
+          {/* Quiet, refined Policy Footer */}
+          <footer className="lv-dms-policy-footer lv-dms-stagger" style={{ '--stagger': 5 }}>
+            <p className="lv-dms-policy-text">
+              <span className="lv-dms-policy-shield" aria-hidden="true">🛡️</span>{' '}
+              {t.policyFootnote}
+            </p>
+          </footer>
+        </div>
       )}
     </div>
   );
