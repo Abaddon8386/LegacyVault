@@ -56,10 +56,10 @@ export const willStatusMessages = {
     FILE_NAME_LABEL: 'Tên tệp gốc',
     FILE_SIZE_LABEL: 'Dung lượng tệp',
     MIME_TYPE_LABEL: 'Định dạng tệp',
-    SHA256_LABEL: 'Mã băm toàn vẹn (SHA-256)',
+    SHA256_LABEL: 'Mã băm của tệp (SHA-256)',
     UPLOADED_AT_LABEL: 'Thời gian tải lên',
     CREATED_AT_LABEL: 'Thời gian khởi tạo hồ sơ',
-    SHA256_HINT: 'Mã băm chỉ dùng để đối soát tính toàn vẹn của tệp, không mang giá trị chứng thực pháp lý.',
+    SHA256_HINT: 'Mã này được tạo từ nội dung tệp, dùng khi cần so sánh các bản sao để phát hiện thay đổi. Mã không xác nhận người lập hoặc giá trị pháp lý của di chúc.',
   },
   en: {
     UPLOADED: 'Uploaded',
@@ -79,10 +79,10 @@ export const willStatusMessages = {
     FILE_NAME_LABEL: 'Original File Name',
     FILE_SIZE_LABEL: 'File Size',
     MIME_TYPE_LABEL: 'File Format',
-    SHA256_LABEL: 'Integrity Checksum (SHA-256)',
+    SHA256_LABEL: 'File hash (SHA-256)',
     UPLOADED_AT_LABEL: 'Uploaded At',
     CREATED_AT_LABEL: 'Record Created At',
-    SHA256_HINT: 'The hash serves only for file integrity verification, not legal certification.',
+    SHA256_HINT: 'This code is generated from the file contents and can be used to compare copies for changes. It does not confirm who created the will or its legal validity.',
   },
 };
 

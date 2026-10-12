@@ -176,8 +176,8 @@ describe('Digitized Will Upload Flow & Safety Contract (PS-7)', () => {
     });
 
     it('SHA-256 hint clarifies hash is for integrity check only, not legal certification', () => {
-      assert.ok(willStatusMessages.vi.SHA256_HINT.includes('không mang giá trị chứng thực pháp lý'));
-      assert.ok(willStatusMessages.en.SHA256_HINT.includes('not legal certification'));
+      assert.ok(willStatusMessages.vi.SHA256_HINT.includes('không xác nhận người lập hoặc giá trị pháp lý'));
+      assert.ok(willStatusMessages.en.SHA256_HINT.includes('does not confirm who created the will or its legal validity'));
     });
   });
 });

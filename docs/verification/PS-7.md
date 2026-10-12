@@ -48,7 +48,7 @@ Kiểm tra trình duyệt thật tại localhost 5180:
 6. Không có console error trong lượt kiểm tra. Đã trả viewport về mặc định.
 
 ![Form desktop VI](ps7-desktop-vi.png)
-![Kết quả upload và SHA-256](ps7-upload-success.png)
+![Kết quả upload với thông tin kỹ thuật thu gọn](ps7-technical-collapsed.png)
 ![Mobile EN](ps7-mobile-en.png)
 
 ## Giới hạn bàn giao và rollback
@@ -57,3 +57,12 @@ Kiểm tra trình duyệt thật tại localhost 5180:
 
 Không triển khai PS-18 (version tiếp theo), không bổ sung download/content preview ngoài PS-7.
 Nếu cần rollback sau merge, revert merge commit PR #9 theo quy trình repo nhóm; không revert PS-5/PS-6 và không có migration DB cần rollback.
+
+
+## Điều chỉnh nội dung theo review của người dùng
+
+- Đổi mục SHA-256 thành **Thông tin kỹ thuật / Technical information**, mặc định thu gọn bằng `details` không có thuộc tính `open`.
+- Màn hình kết quả chính giữ trạng thái, phiên bản, tên, định dạng, dung lượng và thời gian tải lên. Hash chỉ xuất hiện khi người dùng mở thông tin kỹ thuật.
+- Nhãn và lời giải thích không khẳng định đã kiểm tra toàn vẹn. Mã dùng để so sánh các bản sao khi cần, không xác nhận người lập hoặc giá trị pháp lý.
+- Giữ metadata/hash theo AC PS-7, không thay đổi upload/API hoặc tạo chức năng đối chiếu mới.
+- Xác minh sau chỉnh sửa: 229/229 tests, lint/build pass; browser xác nhận mục kỹ thuật thu gọn mặc định, mở xem được lời giải thích mới ở cả VI/EN.

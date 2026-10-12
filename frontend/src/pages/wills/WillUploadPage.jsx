@@ -10,7 +10,7 @@ const copy = {
     chooseHint: 'Chọn bản chụp hoặc bản quét rõ nét, đầy đủ các trang.', remove: 'Bỏ chọn tệp',
     progress: 'Tiến trình tải lên', preparing: 'Đang chuẩn bị tài liệu…', sending: 'Đang gửi tài liệu…',
     confirming: 'Đang xác nhận kết quả…', cancel: 'Hủy thao tác', another: 'Tải lên tài liệu khác',
-    saved: 'Tài liệu đã được ghi nhận', details: 'Thông tin đối chiếu tài liệu',
+    saved: 'Tài liệu đã được ghi nhận', details: 'Thông tin kỹ thuật',
     errors: {
       BACKEND_NOT_READY: 'Chưa thể kết nối hồ sơ di chúc. Vui lòng thử lại sau.',
       UNAUTHORIZED: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
@@ -29,7 +29,7 @@ const copy = {
     chooseHint: 'Choose a clear, complete photograph or scan.', remove: 'Remove file',
     progress: 'Upload progress', preparing: 'Preparing document…', sending: 'Sending document…',
     confirming: 'Confirming upload…', cancel: 'Cancel upload', another: 'Upload another document',
-    saved: 'Document recorded', details: 'Document comparison information',
+    saved: 'Document recorded', details: 'Technical information',
     errors: {
       BACKEND_NOT_READY: 'Will records cannot be reached yet. Please try again later.',
       UNAUTHORIZED: 'Your session has expired. Please sign in again.',

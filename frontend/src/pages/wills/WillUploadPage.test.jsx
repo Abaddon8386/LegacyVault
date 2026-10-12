@@ -35,7 +35,7 @@ it('maps errors safely and retains input for correction', async () => {
 it('does not invent hash metadata or offer file viewing and downloading', async () => {
   render(<WillUploadPage />); choose(); submit(); resolve({ ...result, currentVersion: { ...result.currentVersion, sha256: undefined } });
   await screen.findByRole('heading', { name: 'Tài liệu đã được ghi nhận' });
-  expect(screen.queryByText('Thông tin đối chiếu tài liệu')).not.toBeInTheDocument(); expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  expect(screen.queryByText('Thông tin kỹ thuật')).not.toBeInTheDocument(); expect(screen.queryByRole('link')).not.toBeInTheDocument();
 });
 it('cancels waiting and gives a safe localized cancellation result', async () => {
   render(<WillUploadPage />); choose(); submit(); fireEvent.click(screen.getByRole('button', { name: 'Hủy thao tác' }));
