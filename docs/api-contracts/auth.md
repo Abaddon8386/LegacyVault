@@ -60,6 +60,7 @@ Trạng thái: **contract đã chốt**, chưa triển khai (khung bảo mật &
   | `POST /auth/register`, `POST /auth/login`, `GET /system/ping`, `GET /system/db-check` (dev) | Công khai |
   | `GET /auth/me` | Đã đăng nhập |
   | `/vaults/**`, `/trustees/**` | `VAULT_OWNER` + ownership |
+  | `/dms/**` | `VAULT_OWNER` (DMS của chính người đăng nhập) |
   | Còn lại | Đã đăng nhập (mặc định từ chối) |
 
 - Chưa đăng nhập → `401 UNAUTHENTICATED`; sai role → `403 ACCESS_DENIED` (cùng `ApiError`).

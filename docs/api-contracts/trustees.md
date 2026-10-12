@@ -21,10 +21,12 @@ Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vau
 | `fullName` | string ≤ 150 | bắt buộc |
 | `phone` | string | tùy chọn |
 | `email` | string | tùy chọn |
-| `relationship` | string ≤ 100 | tùy chọn (quan hệ với Owner) |
-| `note` | string ≤ 500 | tùy chọn |
-| `status` | enum `APPOINTED` \| `REVOKED` | `APPOINTED` ánh xạ trạng thái `ACTIVE` ở DB (D-TRUSTEE-001) |
-| `createdAt`, `updatedAt` | datetime | |
+| `relationship` | string ≤ 100 | tùy chọn (quan hệ với Owner) — cột `relationship_to_owner` |
+| `status` | enum `APPOINTED` \| `REVOKED` | cột `status` (DB mặc định `APPOINTED`) |
+| `appointedAt` | datetime | thời điểm chỉ định — cột `appointed_at` |
+| `revokedAt` | datetime \| null | thời điểm thu hồi, `null` nếu còn hiệu lực — cột `revoked_at` |
+
+DB `trustees` **không có** cột `note`, `created_at`, `updated_at` nên contract không có các trường này (PS-73 Data Dictionary v2).
 
 Ràng buộc: cần **ít nhất một** trong `phone`/`email` để Staff liên hệ được.
 
@@ -32,7 +34,7 @@ Ràng buộc: cần **ít nhất một** trong `phone`/`email` để Staff liên
 
 | Method & path | Mô tả | Thành công | Lỗi |
 |---|---|---|---|
-| `POST /api/v1/trustees` | Chỉ định Trustee. Body: `vaultId`, `fullName`, `phone?`, `email?`, `relationship?`, `note?` | 201 `TrusteeResponse` | 400 · 401 · 403 · 404 (Vault) · 409 `TRUSTEE_ALREADY_EXISTS` · 409 `VAULT_NOT_EDITABLE` |
+| `POST /api/v1/trustees` | Chỉ định Trustee. Body: `vaultId`, `fullName`, `phone?`, `email?`, `relationship?` | 201 `TrusteeResponse` | 400 · 401 · 403 · 404 (Vault) · 409 `TRUSTEE_ALREADY_EXISTS` · 409 `VAULT_NOT_EDITABLE` |
 | `GET /api/v1/trustees?vaultId={id}` | Trustee hiện hành của Vault (`content` rỗng nếu chưa có) | 200 | 400 (thiếu `vaultId`) · 401 · 403 · 404 |
 | `PUT /api/v1/trustees/{trusteeId}` | Cập nhật thông tin (không đổi `vaultId`) | 200 | 400 · 401 · 403 · 404 · 409 |
 | `POST /api/v1/trustees/{trusteeId}/revoke` | Thu hồi chỉ định (còn quyền quản lý kho) | 200 `status: REVOKED` | 401 · 403 · 404 · 409 |

@@ -64,6 +64,7 @@ Sprint 1. Khi code chạm tới, dùng tham số cấu hình và `TODO(open-ques
 |---|---|---|
 | 2026-10-11 | Dương | Chốt D-API-01..29 theo đề xuất; D-API-26 đổi sang `hasIdentityNumber` |
 | 2026-10-12 | Dương (theo quyết định của nhóm) | B4: đổi tên trường trong D-LEGAL-002 thành `legal_basis_type`; A4: xác nhận một Vault/Owner; A5: Grace mặc định 1 ngày; N3: giữ V2; N4 và C1–C4: tạm bỏ qua |
+| 2026-10-12 | Dương | Contract khớp DB: `TrusteeResponse` bỏ `note`, `createdAt`, `updatedAt` (thêm `appointedAt`, `revokedAt`); `DmsResponse` thuộc tính đầu là `ownerId` (thêm `gracePeriodDays`, `updatedAt`); `BeneficiaryResponse` bỏ `updatedAt`; DMS đổi đường dẫn từ `/vaults/{vaultId}/dms` sang `/api/v1/dms` (DMS thuộc Owner) |
 | _điền sau_ | Dương, Long, Ân, Thái, Huy | Biên bản buổi review contract FE/BE |
 
 ## E. Đã thống nhất với PS-73 (database) — 2026-10-11

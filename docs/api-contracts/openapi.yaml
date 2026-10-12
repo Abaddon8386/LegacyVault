@@ -571,14 +571,14 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /api/v1/vaults/{vaultId}/dms:
+  /api/v1/dms:
     put:
       tags: [DMS]
-      summary: Bật/cấu hình chu kỳ DMS (PS-22, ST-06)
-      description: Chặn bằng 422 BENEFICIARY_REQUIRED khi Vault chưa có Beneficiary. DMS không mở khóa/giải mã.
+      summary: Bật/cấu hình chu kỳ DMS của Owner đang đăng nhập (PS-22, ST-06)
+      description: |
+        DMS thuộc tài khoản Owner (mỗi Owner một DMS), lấy từ người đăng nhập, không có tham số Owner/Vault.
+        Chặn bằng 422 BENEFICIARY_REQUIRED khi Owner chưa có Beneficiary. DMS không mở khóa/giải mã.
       x-status: designed
-      parameters:
-        - $ref: '#/components/parameters/VaultId'
       requestBody:
         required: true
         content:
@@ -594,15 +594,12 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
     get:
       tags: [DMS]
-      summary: Xem cấu hình DMS
+      summary: Xem cấu hình DMS của Owner đang đăng nhập (404 nếu chưa bật)
       x-status: designed
-      parameters:
-        - $ref: '#/components/parameters/VaultId'
       responses:
         '200':
           description: OK
@@ -613,14 +610,12 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /api/v1/vaults/{vaultId}/dms/check-in:
+  /api/v1/dms/check-in:
     post:
       tags: [DMS]
       summary: Owner check-in, cập nhật next_check_at (PS-22)
       description: Chỉ hợp lệ khi DMS ở MONITORING (D-API-27). Không mở khóa, không giải mã.
       x-status: designed
-      parameters:
-        - $ref: '#/components/parameters/VaultId'
       responses:
         '200':
           description: OK
@@ -953,7 +948,6 @@ components:
         phone: { type: string }
         email: { type: string, format: email }
         relationship: { type: string, maxLength: 100 }
-        note: { type: string, maxLength: 500 }
     UpdateTrusteeRequest:
       type: object
       required: [fullName]
@@ -962,7 +956,6 @@ components:
         phone: { type: string }
         email: { type: string, format: email }
         relationship: { type: string, maxLength: 100 }
-        note: { type: string, maxLength: 500 }
     TrusteeResponse:
       type: object
       required: [id, vaultId, fullName, status]
@@ -973,10 +966,9 @@ components:
         phone: { type: string, nullable: true }
         email: { type: string, nullable: true }
         relationship: { type: string, nullable: true }
-        note: { type: string, nullable: true }
         status: { type: string, enum: [APPOINTED, REVOKED] }
-        createdAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
+        appointedAt: { type: string, format: date-time }
+        revokedAt: { type: string, format: date-time, nullable: true }
     TrusteePage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -1012,7 +1004,6 @@ components:
         hasAccount: { type: boolean, description: Luôn false ở Sprint 1 }
         status: { type: string, enum: [DESIGNATED] }
         createdAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
     BeneficiaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -1048,15 +1039,17 @@ components:
           description: Khoảng cho phép do cấu hình (D-API-15); ST-06 nêu ví dụ 30, 90
     DmsResponse:
       type: object
-      required: [vaultId, status, checkIntervalDays, nextCheckAt]
+      required: [ownerId, status, checkIntervalDays, gracePeriodDays, nextCheckAt]
       properties:
-        vaultId: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid, description: 'public_id của tài khoản Owner; DMS thuộc Owner, mỗi Owner một DMS' }
         status: { type: string, enum: [MONITORING, TRIGGERED, GRACE_PERIOD_EXCEEDED] }
         checkIntervalDays: { type: integer }
+        gracePeriodDays: { type: integer, description: 'Chỉ đọc; mặc định 1 (A5)' }
         lastCheckInAt: { type: string, format: date-time, nullable: true }
         nextCheckAt: { type: string, format: date-time }
         triggeredAt: { type: string, format: date-time, nullable: true }
         graceDeadline: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
 
     PageMeta:
       type: object

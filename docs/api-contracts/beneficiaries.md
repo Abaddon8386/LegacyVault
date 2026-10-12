@@ -25,7 +25,7 @@ Trạng thái: **contract đã chốt**. Quyền: `VAULT_OWNER` + sở hữu Vau
 | `hasIdentityNumber` | boolean | cho biết đã có số định danh; số gốc là **write-only** (`identityNumber`) và **không bao giờ** trả ra (D-API-26) |
 | `hasAccount` | boolean | chỉ đọc; luôn `false` ở Sprint 1 |
 | `status` | enum `DESIGNATED` | |
-| `createdAt`, `updatedAt` | datetime | |
+| `createdAt` | datetime | cột `created_at` (DB **không có** `updated_at`) |
 
 ## Endpoint — PS-20
 
@@ -59,7 +59,7 @@ Cần **≥ 1 Beneficiary** để hoàn tất cấu hình.
 
 ### Chặn ở thao tác hoàn tất cấu hình
 
-Thao tác bật DMS (`PUT /vaults/{id}/dms`, PS-22) khi `beneficiaryCount = 0` → **`422 BENEFICIARY_REQUIRED`**
+Thao tác bật DMS (`PUT /api/v1/dms`, PS-22) khi `beneficiaryCount = 0` → **`422 BENEFICIARY_REQUIRED`**
 (business exception, vi/en). Với ≥ 1 Beneficiary hợp lệ thì qua.
 
 ## Test bám contract
