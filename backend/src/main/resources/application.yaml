@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: legacyvault-backend
+
+  datasource:
+    url: jdbc:sqlserver://ABADDON:1433;databaseName=LegacyVault;encrypt=true;trustServerCertificate=true;integratedSecurity=true
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # i18n: messages.properties = vi (mặc định), messages_en.properties = en.
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+# Không để Spring tự đưa stack trace / message / chi tiết binding vào response lỗi.
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+    include-exception: false
+
+# traceId xuất hiện trong mỗi dòng log để tra cứu theo mã trong JSON lỗi.
+logging:
+  pattern:
+    level: "%5p [%X{traceId:-}]"
+
+legacyvault:
+  cors:
+    # Danh sách origin được phép, phân cách bằng dấu phẩy. Mặc định rỗng (dev dùng Vite proxy nên không cần).
+    # Ví dụ khi muốn gọi thẳng không qua proxy: CORS_ALLOWED_ORIGINS=http://localhost:5173
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
