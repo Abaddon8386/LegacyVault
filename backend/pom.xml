@@ -135,6 +135,16 @@
 				</executions>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>../database/migration</directory>
+				<targetPath>db/migration</targetPath>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
 	</build>
 
 </project>

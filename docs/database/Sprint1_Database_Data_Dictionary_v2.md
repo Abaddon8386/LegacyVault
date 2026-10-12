@@ -1,6 +1,6 @@
 # LegacyVault — Data Dictionary
 
-**PS-73 --- UUID Schema v2, cập nhật theo V1 + V2**
+**PS-73 --- UUID Schema v3, cập nhật theo V1 + V2 và các quy tắc đã duyệt**
 
 Phạm vi: 14 bảng nền tảng/ứng dụng; Microsoft SQL Server; kiểu dữ liệu
 T-SQL.
@@ -9,7 +9,8 @@ Lưu ý: Tài liệu mô tả schema dự kiến sau khi
 `V1__create_initial_schema_PS73_batchfix.sql` và
 `V2__upgrade_schema_to_latest_dictionary.sql` chạy thành công. Cần đối
 chiếu database thực tế trước khi xem đây là schema đã triển khai. V2 giữ
-khóa nội bộ `BIGINT`, bổ sung `public_id` cho 10 bảng tài nguyên, thêm
+khóa nội bộ `BIGINT`, bổ sung `public_id` cho 10 bảng tài nguyên với
+`DEFAULT NEWID()` để hỗ trợ seed/SQL INSERT không chỉ định UUID, thêm
 `users.deleted_at`, `beneficiaries.date_of_birth`,
 `beneficiaries.relationship_to_owner` và
 `legal_documents.current_verification_id`. SHA-256 chỉ phục vụ kiểm tra
@@ -36,12 +37,12 @@ toàn vẹn, không chứng minh giá trị pháp lý của tài liệu.
 
 # 2. Chi tiết thuộc tính
 
-## ## users — Tài khoản
+## users — Tài khoản
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | user_id | BIGINT IDENTITY(1,1) | PK | Mã tài khoản nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai dùng trong API |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai dùng trong API |
 | full_name | NVARCHAR(150) | NOT NULL | Họ tên |
 | email | NVARCHAR(254) | UNIQUE, NOT NULL | Email đăng nhập |
 | phone_number | NVARCHAR(20) | NULL | Số điện thoại |
@@ -56,7 +57,7 @@ Quy tắc đăng nhập: chỉ cho phép tài khoản có trạng thái hợp l�
 contract hiện tại là `ACTIVE`) và `deleted_at IS NULL`; đồng thời phải
 xác minh thông tin đăng nhập. Không lưu JWT vào bảng này.
 
-## ## roles — Vai trò
+## roles — Vai trò
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
@@ -69,7 +70,7 @@ Các role code đã thống nhất: `ROLE_VAULT_OWNER`, `ROLE_STAFF_EXECUTOR`,
 `ROLE_LEGAL_VERIFIER`, `ROLE_ADMIN`, `ROLE_BENEFICIARY`. Khi đăng ký,
 server tự gán `ROLE_VAULT_OWNER`; client không được tự gửi role.
 
-## ## user_roles — Gán vai trò
+## user_roles — Gán vai trò
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
@@ -80,13 +81,13 @@ server tự gán `ROLE_VAULT_OWNER`; client không được tự gửi role.
 
 PK ghép: (`user_id`, `role_id`).
 
-## ## vaults — Vault
+## vaults — Vault
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | vault_id | BIGINT IDENTITY(1,1) | PK | Mã Vault nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
-| owner_user_id | BIGINT | FK users, UNIQUE, NOT NULL | Owner; mỗi tài khoản tối đa một Vault theo thiết kế hiện tại |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
+| owner_user_id | BIGINT | FK users, UNIQUE, NOT NULL | Mỗi Owner chỉ được tạo duy nhất một Vault; tạo Vault thứ hai trả 409 Conflict ở API |
 | vault_name | NVARCHAR(150) | NOT NULL | Tên Vault |
 | description | NVARCHAR(MAX) | NULL | Mô tả |
 | status | NVARCHAR(40) | DEFAULT ACTIVE | Trạng thái Vault |
@@ -96,12 +97,12 @@ PK ghép: (`user_id`, `role_id`).
 Owner phải được lấy từ Security Context, không tin `owner_user_id` do
 client gửi lên.
 
-## ## assets — Tài sản logic
+## assets — Tài sản logic
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | asset_id | BIGINT IDENTITY(1,1) | PK | Mã tài sản nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | vault_id | BIGINT | FK vaults, NOT NULL | Vault sở hữu tài sản |
 | asset_type | NVARCHAR(40) | NOT NULL | Loại tài sản |
 | title | NVARCHAR(200) | NOT NULL | Tên hiển thị |
@@ -116,12 +117,12 @@ client gửi lên.
 Các trường payload/IV/key version phải tuân theo CHECK constraint trong
 V1. Tạo Asset không đồng nghĩa với bàn giao hoặc giải mã.
 
-## ## asset_versions — Phiên bản tài liệu
+## asset_versions — Phiên bản tài liệu
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | asset_version_id | BIGINT IDENTITY(1,1) | PK | Mã phiên bản nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | asset_id | BIGINT | FK assets, NOT NULL | Tài sản logic tương ứng |
 | version_no | INT | CHECK \>= 1; duy nhất theo cặp (asset_id, version_no) | Số phiên bản |
 | original_file_name | NVARCHAR(255) | NOT NULL | Tên file gốc; không dùng làm đường dẫn lưu trữ |
@@ -138,16 +139,16 @@ V1. Tạo Asset không đồng nghĩa với bàn giao hoặc giải mã.
 Hash chỉ kiểm tra thay đổi theo quy ước đã chọn, không chứng minh giá
 trị pháp lý.
 
-## ## trustees — Trustee
+## trustees — Trustee
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | trustee_id | BIGINT IDENTITY(1,1) | PK | Mã Trustee nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
-| vault_id | BIGINT | FK vaults, UNIQUE, NOT NULL | Tối đa một Trustee mỗi Vault theo thiết kế hiện tại |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
+| vault_id | BIGINT | FK vaults, NOT NULL; filtered unique index cho status = APPOINTED | Cho phép giữ lịch sử Trustee đã thu hồi; tối đa một Trustee đang được chỉ định mỗi Vault |
 | full_name | NVARCHAR(150) | NOT NULL | Họ tên |
-| phone_number | NVARCHAR(20) | NOT NULL | Số điện thoại |
-| email | NVARCHAR(254) | NULL | Email |
+| phone_number | NVARCHAR(20) | NULL; CHECK phone_number IS NOT NULL OR email IS NOT NULL | Số điện thoại; có thể để trống nếu có email |
+| email | NVARCHAR(254) | NULL; CHECK phone_number IS NOT NULL OR email IS NOT NULL | Email; có thể để trống nếu có số điện thoại |
 | relationship_to_owner | NVARCHAR(100) | NULL | Quan hệ với Owner |
 | status | NVARCHAR(20) | DEFAULT APPOINTED | Trạng thái chỉ định |
 | appointed_at | DATETIME2 | DEFAULT SYSUTCDATETIME() | Thời điểm chỉ định |
@@ -156,12 +157,12 @@ trị pháp lý.
 Trustee không bắt buộc có tài khoản User và không mặc định là
 Beneficiary.
 
-## ## beneficiaries — Người thụ hưởng
+## beneficiaries — Người thụ hưởng
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | beneficiary_id | BIGINT IDENTITY(1,1) | PK | Mã người thụ hưởng nội bộ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | vault_id | BIGINT | FK vaults, NOT NULL | Vault chỉ định người này |
 | linked_user_id | BIGINT | FK users, NULL | Tài khoản liên kết nếu đã có; không bắt buộc |
 | full_name | NVARCHAR(150) | NOT NULL | Họ tên |
@@ -181,12 +182,12 @@ yêu cầu bắt buộc, kiểm tra tại DTO/Service. Luồng người dưới 
 xử lý thông tin người giám hộ; schema hiện tại chưa có thuộc tính riêng
 cho người giám hộ.
 
-## ## asset_allocations — Phân bổ tài sản
+## asset_allocations — Phân bổ tài sản
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | allocation_id | BIGINT IDENTITY(1,1) | PK | Mã phân bổ |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | asset_id | BIGINT | FK assets, NOT NULL | Tài sản được phân bổ |
 | beneficiary_id | BIGINT | FK beneficiaries, NOT NULL | Người thụ hưởng |
 | allocation_description | NVARCHAR(MAX) | NULL | Hướng dẫn/phạm vi phân bổ |
@@ -197,15 +198,15 @@ cho người giám hộ.
 Service phải xác minh Asset và Beneficiary thuộc cùng Vault; các FK
 riêng lẻ không bảo đảm điều kiện này.
 
-## ## dms_configs — Dead Man's Switch
+## dms_configs — Dead Man's Switch
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | dms_id | BIGINT IDENTITY(1,1) | PK | Mã cấu hình DMS |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | owner_user_id | BIGINT | FK users, UNIQUE, NOT NULL | Một DMS cho mỗi tài khoản Owner |
 | check_interval_days | SMALLINT | CHECK \> 0 | Khoảng cách check-in |
-| grace_period_days | SMALLINT | CHECK \>= 0 | Số ngày ân hạn |
+| grace_period_days | SMALLINT | NOT NULL, DEFAULT 1, CHECK >= 0 | Số ngày ân hạn; mặc định 1 ngày, Owner có thể chỉnh sửa |
 | status | NVARCHAR(30) | DEFAULT MONITORING | Trạng thái DMS |
 | last_check_in_at | DATETIME2 | NULL | Check-in gần nhất |
 | next_check_at | DATETIME2 | NULL | Hạn check-in tiếp theo |
@@ -216,7 +217,7 @@ riêng lẻ không bảo đảm điều kiện này.
 Scheduler chỉ chuyển trạng thái theo luồng DMS và ghi hạn grace period;
 không tự xác nhận tử vong, mở khóa hoặc giải mã tài sản.
 
-## ## vitality_check_logs — Lịch sử DMS
+## vitality_check_logs — Lịch sử DMS
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
@@ -227,7 +228,7 @@ không tự xác nhận tử vong, mở khóa hoặc giải mã tài sản.
 | channel | NVARCHAR(30) | NULL | Kênh liên lạc |
 | details | NVARCHAR(MAX) | NULL | Thông tin bổ sung; không ghi bí mật dạng rõ |
 
-## ## audit_logs — Audit log
+## audit_logs — Audit log
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
@@ -246,12 +247,12 @@ V1 có trigger chặn UPDATE/DELETE. Cần giới hạn quyền DB runtime và k
 thử trigger trên SQL Server; không dùng tài khoản `db_owner` cho ứng
 dụng.
 
-## ## legal_documents — Hồ sơ tài liệu pháp lý
+## legal_documents — Hồ sơ tài liệu pháp lý
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | legal_document_id | BIGINT IDENTITY(1,1) | PK | Mã hồ sơ pháp lý |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | asset_id | BIGINT | FK assets, UNIQUE, NOT NULL | Mỗi Asset tối đa một LegalDocument theo thiết kế hiện tại |
 | document_type | NVARCHAR(40) | NOT NULL | Loại tài liệu, ví dụ WILL hoặc DEATH_CERTIFICATE |
 | verification_status | NVARCHAR(30) | DEFAULT PENDING_VERIFICATION; CHECK | Trạng thái quy trình xác minh |
@@ -264,12 +265,12 @@ Upload tài liệu không tự đặt `LEGAL_APPROVED`. `current_verification_id
 tham chiếu lần xác minh hiện tại; Service phải cập nhật nhất quán trong
 transaction.
 
-## ## legal_verifications — Lịch sử xác minh pháp lý
+## legal_verifications — Lịch sử xác minh pháp lý
 
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | verification_id | BIGINT IDENTITY(1,1) | PK | Mã lần xác minh |
-| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL; thêm ở V2 | ID công khai |
+| public_id | UNIQUEIDENTIFIER | UNIQUE, NOT NULL, DEFAULT NEWID(); thêm ở V2 | ID công khai |
 | legal_document_id | BIGINT | FK legal_documents, NOT NULL | Hồ sơ được xác minh |
 | asset_version_id | BIGINT | FK asset_versions, NULL | Phiên bản file được xem xét nếu có; được giữ từ V1 |
 | verifier_user_id | BIGINT | FK users, NULL | Người xác minh; có thể chưa được gán |
@@ -288,19 +289,22 @@ minh lại. `asset_version_id` được giữ để tương thích schema V1.
     lệ và `deleted_at IS NULL`; không log password hoặc JWT.
 -   **RBAC:** server tự gán `ROLE_VAULT_OWNER` khi đăng ký; Spring
     Security kiểm tra quyền cho endpoint.
--   **Vault/Asset ownership:** lấy Owner từ Security Context; kiểm tra
-    quyền sở hữu trước khi xem, tạo hoặc cập nhật dữ liệu.
+-   **Vault/Asset ownership:** mỗi Owner chỉ có duy nhất một Vault; API
+    trả `409 Conflict` khi tạo Vault thứ hai. Lấy Owner từ Security Context;
+    kiểm tra quyền sở hữu trước khi xem, tạo hoặc cập nhật dữ liệu.
 -   **Upload và versioning:** upload thành công không đồng nghĩa phê
     duyệt pháp lý; hash SHA-256 không chứng minh giá trị pháp lý.
 -   **Trustee:** không bắt buộc có User account và không mặc định là
-    Beneficiary.
+    Beneficiary. Lưu lịch sử bằng bản ghi riêng; chỉ một bản ghi `APPOINTED`
+    cho mỗi Vault. Ít nhất một trong `phone_number` hoặc `email` phải có giá trị.
 -   **Beneficiary:** độc lập với User account; kiểm tra điều kiện ít
     nhất một Beneficiary trong Service/transaction khi hoàn tất cấu
     hình. Người dưới 18 tuổi cần luồng thông tin người giám hộ.
 -   **Asset allocation:** Service phải kiểm tra Asset và Beneficiary
     thuộc cùng Vault.
--   **DMS:** một cấu hình cho mỗi tài khoản Owner. Scheduler chuyển quá
-    hạn sang `TRIGGERED` và ghi grace period; không tự chuyển
+-   **DMS:** một cấu hình cho mỗi tài khoản Owner. `grace_period_days`
+    mặc định là 1 ngày và Owner có thể chỉnh sửa. Scheduler chuyển quá hạn
+    sang `TRIGGERED` và ghi grace period; không tự chuyển
     `DEATH_CONFIRMED`/`UNLOCKED`, không giải mã.
 -   **Legal verification:** lưu lịch sử từng lần xác minh; kiểm tra
     quyền verifier và ghi audit.
@@ -316,11 +320,11 @@ minh lại. `asset_version_id` được giữ để tương thích schema V1.
 | Entity A | Entity B | Bội số | Triển khai |
 | --- | --- | --- | --- |
 | users | roles | N:M | Qua user_roles |
-| users | vaults | 1 : 0..1 | vaults.owner_user_id UNIQUE |
+| users | vaults | 1 : 0..1 | vaults.owner_user_id UNIQUE; API trả 409 nếu tạo Vault thứ hai |
 | vaults | assets | 1:N | assets.vault_id |
 | assets | asset_versions | 1:N | asset_versions.asset_id |
 | users | asset_versions | 1:N | uploaded_by_user_id |
-| vaults | trustees | 1 : 0..1 | trustees.vault_id UNIQUE |
+| vaults | trustees | 1 : 0..1 đang hiệu lực, 1:N lịch sử | Filtered unique index UX_trustees_vault_active trên vault_id khi status = APPOINTED |
 | vaults | beneficiaries | 1:N | beneficiaries.vault_id |
 | users | beneficiaries | 1:N tùy chọn | beneficiaries.linked_user_id |
 | assets | beneficiaries | N:M | Qua asset_allocations; Service kiểm tra cùng Vault |
@@ -349,8 +353,8 @@ thể chạy lại tùy ý trên schema đã tồn tại.
 -   `beneficiaries.date_of_birth` và `relationship_to_owner` hiện
     nullable để tương thích dữ liệu cũ; có thể bắt buộc ở DTO/Service
     theo nghiệp vụ.
--   V2 tạo UUID cho các bản ghi cũ bằng `NEWID()`; ứng dụng cần gán UUID
-    cho bản ghi mới.
+-   V2 backfill UUID cũ bằng `NEWID()` và đặt `DEFAULT NEWID()` trên
+    cả 10 cột `public_id`; ứng dụng vẫn có thể tự gán UUID cho bản ghi mới.
 -   Không sửa migration đã chạy thành công trên database dùng chung; nếu
     cần thay đổi tiếp theo, tạo migration phiên bản mới.
 -   Đối chiếu tên cột, kiểu dữ liệu, index, FK và CHECK constraint trong

@@ -151,6 +151,57 @@ WHERE kc.type = 'UQ' AND SCHEMA_NAME(t.schema_id) = 'dbo'
 ORDER BY t.name, kc.name;
 ```
 
+### Kiểm tra các quy tắc đã được duyệt
+
+```sql
+USE LegacyVault;
+GO
+
+-- Mỗi Owner chỉ có một Vault.
+SELECT name, is_unique
+FROM sys.indexes
+WHERE object_id = OBJECT_ID('dbo.vaults')
+  AND is_unique = 1;
+
+-- Chỉ một Trustee đang APPOINTED cho mỗi Vault; lịch sử đã thu hồi vẫn được giữ.
+SELECT name, is_unique, filter_definition
+FROM sys.indexes
+WHERE object_id = OBJECT_ID('dbo.trustees')
+  AND name = 'UX_trustees_vault_active';
+
+-- Trustee phải có ít nhất phone hoặc email.
+SELECT name, definition
+FROM sys.check_constraints
+WHERE parent_object_id = OBJECT_ID('dbo.trustees')
+  AND name = 'CK_trustees_phone_or_email';
+
+-- Grace period có DEFAULT 1.
+SELECT c.name AS column_name, dc.name AS default_constraint,
+       dc.definition AS default_value
+FROM sys.default_constraints dc
+JOIN sys.columns c
+  ON c.object_id = dc.parent_object_id
+ AND c.column_id = dc.parent_column_id
+WHERE dc.parent_object_id = OBJECT_ID('dbo.dms_configs')
+  AND c.name = 'grace_period_days';
+
+-- Các public_id đều có DEFAULT NEWID().
+SELECT t.name AS table_name, c.name AS column_name, dc.definition AS default_value
+FROM sys.tables t
+JOIN sys.columns c ON c.object_id = t.object_id AND c.name = 'public_id'
+LEFT JOIN sys.default_constraints dc
+  ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
+WHERE SCHEMA_NAME(t.schema_id) = 'dbo'
+ORDER BY t.name;
+```
+
+Kết quả cần xác nhận:
+- `vaults.owner_user_id` có unique constraint/index.
+- `UX_trustees_vault_active` lọc `status = 'APPOINTED'`.
+- `CK_trustees_phone_or_email` tồn tại.
+- `dms_configs.grace_period_days` có default `(1)`.
+- 10 bảng có `public_id` đều hiển thị default `newid()`.
+
 ## 6. Kiểm tra index và trigger
 
 ### Index
@@ -200,7 +251,7 @@ BEGIN
 END;
 ```
 
-Mong đợi: migration `1` có `success = 1`. Nếu V1 thất bại và được rollback, không nên xem database là đã setup xong.
+Mong đợi: mọi migration áp dụng (bao gồm V1 và V2 nếu V2 đã được thêm vào branch) có `success = 1`. Nếu migration thất bại/rollback, không xem database là đã setup xong.
 
 ## 8. Kiểm tra dữ liệu seed
 
@@ -273,7 +324,7 @@ Tài khoản demo chỉ xuất hiện nếu seed tương ứng đã được ch�
 1. Khởi động ứng dụng Spring Boot để Flyway chạy migration.
 2. Xác nhận V1 trong `flyway_schema_history` có `success = 1`.
 3. Chạy các câu lệnh ở mục 3, 5, 6 để xác nhận bảng và constraints.
-4. Chạy file seed demo riêng trong SSMS, sau khi thay placeholder BCrypt hash nếu có.
+4. Chạy file seed demo riêng trong SSMS, sau khi thay placeholder BCrypt hash nếu có. Seed bỏ qua `public_id` để database sinh UUID bằng `DEFAULT NEWID()`; dữ liệu DMS demo dùng grace period 1 ngày.
 5. Chạy mục 8 để xác nhận dữ liệu.
 6. Chỉ sau đó mới kiểm tra luồng API bằng Postman hoặc test tự động.
 

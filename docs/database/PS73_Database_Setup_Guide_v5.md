@@ -1,7 +1,7 @@
 
 # LEGACYVAULT — PS-73 DATABASE SETUP GUIDE
 
-**Phiên bản:** v5 (Markdown, cập nhật theo Data Dictionary UUID mới)
+**Phiên bản:** v6 (classpath migration, UUID defaults và quy tắc nghiệp vụ đã cập nhật)
 **Phạm vi:** Bắt đầu từ chuẩn bị SQL Server/database, cài đặt Flyway, chạy migration, seed dữ liệu và kiểm tra hoàn tất.
 
 > **Mục tiêu:** Hướng dẫn thành viên chuẩn bị SQL Server database tên `LegacyVault`, cấu hình Backend Spring Boot, thêm Flyway vào Maven, chạy migration, nạp dữ liệu thử nghiệm và kiểm tra kết quả.
@@ -150,9 +150,28 @@ LegacyVault/
 
 Tên file ví dụ minh họa quy tắc đặt tên Flyway: `V` + phiên bản + hai dấu gạch dưới + mô tả + `.sql`. Dùng file migration thật đang có trong branch, không tạo file trùng phiên bản đã tồn tại.
 
-### 3.4. Cấu hình Flyway trong `application.yaml`
+### 3.4. Đóng gói migration vào classpath
 
-Mở `backend/src/main/resources/application.yaml`. Giữ các cấu hình hiện có và xác nhận có các phần tương đương sau:
+Giữ các file SQL trong root repository tại `database/migration/`. Không cần chuyển chúng vào `backend/src/main/`. Để Flyway tìm migration ổn định khi chạy từ IntelliJ, Maven hoặc file JAR, cấu hình Maven sao chép migration vào classpath.
+
+Trong `backend/pom.xml`, tìm phần `<build>`. Nếu đã có `<resources>`, thêm resource migration vào danh sách hiện có; không tạo khối `<resources>` thứ hai:
+
+```xml
+<resources>
+    <resource>
+        <directory>src/main/resources</directory>
+    </resource>
+    <resource>
+        <directory>../database/migration</directory>
+        <targetPath>db/migration</targetPath>
+        <filtering>false</filtering>
+    </resource>
+</resources>
+```
+
+Resource đầu tiên giữ các file cấu hình backend hiện có. Resource thứ hai đóng gói `../database/migration` thành `db/migration` trong classpath của ứng dụng.
+
+Mở `backend/src/main/resources/application.yaml` và dùng cấu hình:
 
 ```yaml
 spring:
@@ -161,28 +180,20 @@ spring:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   flyway:
     enabled: true
-    locations: filesystem:../database/migration
+    locations: classpath:db/migration
   jpa:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.SQLServerDialect
 ```
 
-Quan trọng: `filesystem:../database/migration` là đường dẫn tương đối với **Working directory** khi chạy ứng dụng. Với Working directory là thư mục `backend`, đường dẫn này trỏ tới `database/migration` ở root repository.
+Sau khi sửa `pom.xml`, reload Maven rồi chạy từ thư mục `backend`:
 
-**Nếu `../` không hoạt động**, kiểm tra trường **Working directory** trong Run Configuration trước. Nếu Working directory đang là root repository `LegacyVault`, đổi cấu hình thành:
-
-```yaml
-spring:
-  flyway:
-    locations: filesystem:database/migration
+```bash
+./mvnw clean process-resources
 ```
 
-Tóm lại:
-- Working directory = `LegacyVault/backend` → dùng `filesystem:../database/migration`.
-- Working directory = `LegacyVault` → dùng `filesystem:database/migration`.
-
-Chỉ dùng một giá trị phù hợp với Working directory thực tế; không khai báo cả hai đường dẫn cùng lúc. Nếu vẫn không tìm thấy migration, xác nhận thư mục tồn tại và đường dẫn tương đối từ Working directory trỏ đúng tới `database/migration`.
+Trên Windows PowerShell dùng `.\mvnw.cmd clean process-resources`. Xác nhận các file migration xuất hiện trong `backend/target/classes/db/migration/`. Cách này không phụ thuộc Working directory.
 
 > **Không để Hibernate tự tạo schema:** Giữ `spring.jpa.hibernate.ddl-auto: none`. Flyway quản lý migration; không đổi sang `create/update` để né lỗi.
 
@@ -203,8 +214,8 @@ Nếu dùng Windows Integrated Authentication, tài khoản chạy ứng dụng 
 ### 4.2. Xác nhận Working directory
 
 1. Trong **Run → Edit Configurations**, tìm trường **Working directory**.
-2. Đặt Working directory theo cấu trúc repository và đảm bảo đường dẫn `filesystem:../database/migration` trỏ đúng thư mục `database/migration`.
-3. Lưu cấu hình. Nếu ứng dụng báo không tìm thấy migration, kiểm tra mục này trước.
+2. Working directory có thể là thư mục `backend`; migration được nạp từ `classpath:db/migration` nên không phụ thuộc Working directory.
+3. Lưu cấu hình. Nếu ứng dụng báo không tìm thấy migration, kiểm tra Maven resource configuration và `target/classes/db/migration/`.
 
 ### 4.3. Xác minh database trước khi chạy
 
@@ -230,8 +241,8 @@ Xác nhận `DB_NAME()` trả về `LegacyVault` khi chạy các truy vấn ki�
 
 1. Mở `database/migration` và xem file migration đã commit trên branch.
 2. Không sửa file migration đã được áp dụng trên database dùng chung; nếu cần thay đổi schema, tạo migration phiên bản tiếp theo theo quy ước nhóm.
-3. Đảm bảo dependency Flyway đã tải thành công và `DB_URL`/Working directory đúng.
-4. Data Dictionary UUID mới yêu cầu `public_id` trên các bảng được chỉ định, cùng các cột `users.deleted_at`, `beneficiaries.date_of_birth` và `beneficiaries.relationship_to_owner`. Xác nhận các migration bổ sung các cột này có trong branch và chạy theo đúng thứ tự version.
+3. Đảm bảo dependency Flyway đã tải thành công, `DB_URL` đúng và migration đã được đóng gói vào classpath.
+4. Migration phải đặt `DEFAULT NEWID()` cho 10 cột `public_id` để seed/SQL INSERT có thể bỏ qua cột này; ứng dụng vẫn có thể tự gán UUID. Schema cũng phải cho phép lưu lịch sử Trustee, chỉ giới hạn một bản ghi `APPOINTED` mỗi Vault, yêu cầu ít nhất một trong phone/email và đặt grace period mặc định 1 ngày. Mỗi Owner chỉ được có một Vault; API trả `409 Conflict` khi tạo Vault thứ hai. Xác nhận các migration cần thiết có trong branch và chạy đúng thứ tự version.
 5. Nếu migration V2/V3 từng thất bại, xem log và `flyway_schema_history` trước khi thử lại. Không sửa migration đã áp dụng thành công trên database dùng chung; nếu cần điều chỉnh schema sau đó, tạo migration phiên bản kế tiếp. Chỉ sửa file migration bị lỗi và chưa được áp dụng thành công sau khi xác nhận trạng thái của tất cả môi trường nhóm.
 
 ### 5.2. Chạy ứng dụng
@@ -388,7 +399,7 @@ Các truy vấn trên kỳ vọng không trả về dòng nào. Nếu có dòng,
 | `Connection refused` | TCP/IP tắt hoặc port sai. | Kiểm tra TCP/IP, port thực tế và endpoint trong `DB_URL`. |
 | `Login failed for user` | Tài khoản chạy ứng dụng không có quyền. | So sánh tài khoản Windows của SSMS/IntelliJ và yêu cầu quản trị viên cấp quyền. |
 | `Cannot open database LegacyVault` | Database không tồn tại/offline hoặc thiếu quyền. | Kiểm tra `sys.databases` và quyền; không tạo database trên server chia sẻ nếu chưa được phép. |
-| Flyway không tìm thấy migration | `flyway.locations` không khớp Working directory. | Working directory ở `backend` dùng `filesystem:../database/migration`; ở root `LegacyVault` dùng `filesystem:database/migration`. |
+| Flyway không tìm thấy migration | Migration chưa được đóng gói vào classpath hoặc cấu hình location sai. | Kiểm tra `<resources>` trong `backend/pom.xml`, chạy `process-resources`, xác nhận `target/classes/db/migration/` có file và dùng `classpath:db/migration`. |
 | Flyway checksum mismatch | File migration đã chạy bị sửa. | Không sửa metadata thủ công; khôi phục migration đã commit hoặc thống nhất migration mới với nhóm. |
 | `Invalid object name` | Migration chưa chạy hoặc đang query nhầm database/schema. | Kiểm tra `DB_NAME()`, `flyway_schema_history` và danh sách bảng. |
 | `Invalid column name assigned_by` | Dùng tên cột cũ. | Dùng `assigned_by_user_id` theo schema hiện tại. |
@@ -401,7 +412,7 @@ Các truy vấn trên kỳ vọng không trả về dòng nào. Nếu có dòng,
 - [ ] Database `LegacyVault` tồn tại và ở trạng thái `ONLINE`.
 - [ ] `backend/pom.xml` có dependency Flyway cần thiết, không bị khai báo trùng.
 - [ ] Maven tải dependency thành công.
-- [ ] `application.yaml` bật Flyway và `flyway.locations` trỏ đúng thư mục migration theo Working directory (`filesystem:../database/migration` hoặc `filesystem:database/migration`).
+- [ ] `backend/pom.xml` đóng gói `../database/migration` vào `db/migration`; `application.yaml` dùng `classpath:db/migration`.
 - [ ] `DB_URL` trỏ đúng endpoint SQL Server và `databaseName=LegacyVault`.
 - [ ] `spring.jpa.hibernate.ddl-auto` vẫn là `none`.
 - [ ] Backend khởi động và Flyway migration chạy thành công.

@@ -4,7 +4,7 @@
     Flyway version: V2
 
     Prerequisite:
-      - V1__create_initial_schema.sql has been applied successfully.
+      - The project's V1 schema migration has been applied successfully.
       - Run this migration through Flyway, not by manually executing fragments.
 
     Changes:
@@ -12,10 +12,15 @@
       2. Add users.deleted_at for soft deletion.
       3. Add beneficiaries.date_of_birth and beneficiaries.relationship_to_owner.
       4. Add legal_documents.current_verification_id and its FK after both tables exist.
+      5. Add DEFAULT NEWID() to each public_id for seed/manual INSERT compatibility.
+      6. Preserve Trustee history with one active APPOINTED Trustee per Vault and
+         require at least one contact method.
+      7. Set the DMS grace-period default to one day.
 
     Notes:
-      - UUIDs for existing records are backfilled with NEWID(). The application should
-        assign UUID.randomUUID() for new resource records.
+      - UUIDs for existing records are backfilled with NEWID(). DEFAULT NEWID()
+        constraints also support SQL seed/manual INSERTs that omit public_id.
+        The application may still assign UUID.randomUUID() explicitly.
       - New beneficiary fields remain NULL-compatible for existing rows. Validate them
         in DTO/Service for new/updated beneficiary records according to business rules.
       - The V1 legal_verifications.asset_version_id column is retained for compatibility;
@@ -141,5 +146,109 @@ BEGIN
         FOREIGN KEY (current_verification_id)
         REFERENCES dbo.legal_verifications(verification_id);
 END;
+
+
+/* 14. Defaults for public_id.
+   The seed and manual INSERT scripts may omit public_id; NEWID() fills it.
+   Application code may still supply a UUID explicitly. */
+DECLARE @PublicIdDefaults TABLE (table_name SYSNAME PRIMARY KEY);
+INSERT INTO @PublicIdDefaults(table_name)
+VALUES (N'users'), (N'vaults'), (N'assets'), (N'asset_versions'), (N'trustees'),
+       (N'beneficiaries'), (N'asset_allocations'), (N'dms_configs'),
+       (N'legal_documents'), (N'legal_verifications');
+
+DECLARE @TableName SYSNAME, @Sql NVARCHAR(MAX);
+DECLARE public_id_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT table_name FROM @PublicIdDefaults;
+OPEN public_id_cursor;
+FETCH NEXT FROM public_id_cursor INTO @TableName;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF COL_LENGTH(N'dbo.' + @TableName, N'public_id') IS NOT NULL
+       AND NOT EXISTS (
+           SELECT 1
+           FROM sys.default_constraints dc
+           JOIN sys.columns c ON c.object_id = dc.parent_object_id
+                             AND c.column_id = dc.parent_column_id
+           WHERE dc.parent_object_id = OBJECT_ID(N'dbo.' + @TableName)
+             AND c.name = N'public_id'
+       )
+    BEGIN
+        SET @Sql = N'ALTER TABLE dbo.' + QUOTENAME(@TableName)
+                 + N' ADD CONSTRAINT ' + QUOTENAME(N'DF_' + @TableName + N'_public_id')
+                 + N' DEFAULT NEWID() FOR public_id;';
+        EXEC sys.sp_executesql @Sql;
+    END;
+    FETCH NEXT FROM public_id_cursor INTO @TableName;
+END;
+CLOSE public_id_cursor;
+DEALLOCATE public_id_cursor;
+
+/* 15. Trustee history: only one currently appointed Trustee per Vault.
+   Preserve revoked rows instead of enforcing UNIQUE(vault_id) across history. */
+IF EXISTS (
+    SELECT 1 FROM sys.key_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.trustees')
+      AND name = N'UQ_trustees_vault'
+)
+    ALTER TABLE dbo.trustees DROP CONSTRAINT UQ_trustees_vault;
+
+IF EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.trustees')
+      AND name = N'UQ_trustees_vault'
+      AND is_unique = 1
+)
+    DROP INDEX UQ_trustees_vault ON dbo.trustees;
+
+IF EXISTS (
+    SELECT 1
+    FROM dbo.trustees
+    WHERE status = N'APPOINTED'
+    GROUP BY vault_id
+    HAVING COUNT_BIG(*) > 1
+)
+    THROW 51031, 'Cannot create active Trustee unique index: more than one APPOINTED Trustee exists for a Vault. Resolve duplicate active records first.', 1;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.trustees')
+      AND name = N'UX_trustees_vault_active'
+)
+    CREATE UNIQUE INDEX UX_trustees_vault_active
+        ON dbo.trustees(vault_id)
+        WHERE status = N'APPOINTED';
+
+/* A Trustee must have at least one contact method; either field may be NULL. */
+ALTER TABLE dbo.trustees ALTER COLUMN phone_number NVARCHAR(20) NULL;
+
+IF EXISTS (
+    SELECT 1 FROM dbo.trustees
+    WHERE phone_number IS NULL AND email IS NULL
+)
+    THROW 51032, 'Cannot add Trustee contact constraint: existing Trustee row has neither phone_number nor email. Fix the row before rerunning migration.', 1;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.trustees')
+      AND name = N'CK_trustees_phone_or_email'
+)
+    ALTER TABLE dbo.trustees
+        ADD CONSTRAINT CK_trustees_phone_or_email
+        CHECK (phone_number IS NOT NULL OR email IS NOT NULL);
+
+/* Grace period defaults to one day; Owner may change it through the application. */
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.default_constraints dc
+    JOIN sys.columns c ON c.object_id = dc.parent_object_id
+                      AND c.column_id = dc.parent_column_id
+    WHERE dc.parent_object_id = OBJECT_ID(N'dbo.dms_configs')
+      AND c.name = N'grace_period_days'
+)
+    ALTER TABLE dbo.dms_configs
+        ADD CONSTRAINT DF_dms_configs_grace_period_days
+        DEFAULT (1) FOR grace_period_days;
+
 
 /* End V2. Flyway records this migration in dbo.flyway_schema_history. */

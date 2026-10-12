@@ -6,7 +6,7 @@ spring:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   flyway:
     enabled: true
-    locations: filesystem:database/migration
+    locations: classpath:db/migration
 
   jpa:
     hibernate:

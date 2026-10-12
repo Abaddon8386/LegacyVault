@@ -196,7 +196,7 @@ BEGIN TRY
         INSERT dbo.asset_allocations(asset_id,beneficiary_id,allocation_description,version_no,status)
         VALUES(@AssetDocId,@Beneficiary2Id,N'[TEST] Allocation to Beneficiary Two',1,N'DRAFT');
 
-    IF NOT EXISTS(SELECT 1 FROM dbo.trustees WHERE vault_id=@VaultId)
+    IF NOT EXISTS(SELECT 1 FROM dbo.trustees WHERE vault_id=@VaultId AND status=N'APPOINTED')
         INSERT dbo.trustees(vault_id,full_name,phone_number,email,relationship_to_owner,status)
         VALUES(@VaultId,N'[TEST] Demo Trustee','0920000000','seed.trustee@legacyvault.local',N'Demo relation',N'APPOINTED');
 
@@ -204,7 +204,7 @@ BEGIN TRY
     IF @DmsId IS NULL
     BEGIN
         INSERT dbo.dms_configs(owner_user_id,check_interval_days,grace_period_days,status,last_check_in_at,next_check_at,triggered_at,grace_period_ends_at)
-        VALUES(@OwnerUserId,30,14,N'MONITORING',SYSUTCDATETIME(),DATEADD(DAY,30,SYSUTCDATETIME()),NULL,NULL);
+        VALUES(@OwnerUserId,30,1,N'MONITORING',SYSUTCDATETIME(),DATEADD(DAY,30,SYSUTCDATETIME()),NULL,NULL);
         SET @DmsId = CONVERT(BIGINT,SCOPE_IDENTITY());
     END;
 
