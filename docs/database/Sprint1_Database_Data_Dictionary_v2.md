@@ -1,6 +1,6 @@
 # LegacyVault — Data Dictionary
 
-**PS-73 --- UUID Schema v3, cập nhật theo V1 + V2 và các quy tắc đã duyệt**
+**PS-73 --- UUID Schema v3, cập nhật bổ sung thuộc tính `trustees.note`**
 
 Phạm vi: 14 bảng nền tảng/ứng dụng; Microsoft SQL Server; kiểu dữ liệu
 T-SQL.
@@ -141,6 +141,8 @@ trị pháp lý.
 
 ## trustees — Trustee
 
+Cập nhật: thêm `note NVARCHAR(255) NULL` để Owner lưu ghi chú/hướng dẫn cho Trustee.
+
 | Thuộc tính | Kiểu dữ liệu | Khóa / ràng buộc | Ý nghĩa |
 | --- | --- | --- | --- |
 | trustee_id | BIGINT IDENTITY(1,1) | PK | Mã Trustee nội bộ |
@@ -150,6 +152,7 @@ trị pháp lý.
 | phone_number | NVARCHAR(20) | NULL; CHECK phone_number IS NOT NULL OR email IS NOT NULL | Số điện thoại; có thể để trống nếu có email |
 | email | NVARCHAR(254) | NULL; CHECK phone_number IS NOT NULL OR email IS NOT NULL | Email; có thể để trống nếu có số điện thoại |
 | relationship_to_owner | NVARCHAR(100) | NULL | Quan hệ với Owner |
+| note | NVARCHAR(255) | NULL | Ghi chú/hướng dẫn do Vault Owner để lại cho Trustee |
 | status | NVARCHAR(20) | DEFAULT APPOINTED | Trạng thái chỉ định |
 | appointed_at | DATETIME2 | DEFAULT SYSUTCDATETIME() | Thời điểm chỉ định |
 | revoked_at | DATETIME2 | NULL | Thời điểm thu hồi |

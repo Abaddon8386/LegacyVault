@@ -16,6 +16,7 @@
       6. Preserve Trustee history with one active APPOINTED Trustee per Vault and
          require at least one contact method.
       7. Set the DMS grace-period default to one day.
+      8. Add nullable trustees.note for Owner-provided instructions.
 
     Notes:
       - UUIDs for existing records are backfilled with NEWID(). DEFAULT NEWID()
@@ -183,6 +184,10 @@ BEGIN
 END;
 CLOSE public_id_cursor;
 DEALLOCATE public_id_cursor;
+
+/* Add optional Owner-provided note/instructions for the Trustee. */
+IF COL_LENGTH(N'dbo.trustees', N'note') IS NULL
+    ALTER TABLE dbo.trustees ADD note NVARCHAR(255) NULL;
 
 /* 15. Trustee history: only one currently appointed Trustee per Vault.
    Preserve revoked rows instead of enforcing UNIQUE(vault_id) across history. */
