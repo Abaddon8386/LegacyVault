@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useModalFocus } from '../common/useModalFocus'
 import { Button } from '../common/Button'
 import { AlertCircle, Lock } from 'lucide-react'
 import './AssetFormModal.css'
@@ -30,21 +31,21 @@ export function AssetFormModal({
     const trimmedName = formData.name.trim()
 
     if (!trimmedName) {
-      errs.name = t.assets.validation.nameRequired
+      errs.name = 'nameRequired'
     } else if (trimmedName.length > 150) {
-      errs.name = t.assets.validation.nameMax
+      errs.name = 'nameMax'
     }
 
     if (!formData.assetType || !['TEXT', 'CREDENTIAL'].includes(formData.assetType)) {
-      errs.assetType = t.assets.validation.typeRequired
+      errs.assetType = 'typeRequired'
     }
 
     if (formData.description && formData.description.length > 1000) {
-      errs.description = t.assets.validation.descMax
+      errs.description = 'descMax'
     }
 
     if (!formData.payload || !formData.payload.trim()) {
-      errs.payload = t.assets.validation.payloadRequired
+      errs.payload = 'payloadRequired'
     }
 
     setErrors(errs)
@@ -60,21 +61,24 @@ export function AssetFormModal({
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!validate()) return
+    if (isSubmitting || !validate()) return
 
     onSubmit({
       name: formData.name.trim(),
       assetType: formData.assetType,
       description: formData.description.trim(),
-      payload: formData.payload.trim(),
+      payload: formData.payload,
     })
   }
 
   function handleResetAndClose() {
+    if (isSubmitting) return
     setFormData(emptyForm)
     setErrors({})
     onClose()
   }
+
+  const dialogRef = useModalFocus(isOpen, handleResetAndClose, isSubmitting)
 
   if (!isOpen) return null
 
@@ -90,6 +94,8 @@ export function AssetFormModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        ref={dialogRef}
+        tabIndex={-1}
         aria-labelledby="asset-modal-title"
       >
         <div className="lv-modal__header">
@@ -104,6 +110,7 @@ export function AssetFormModal({
             className="lv-modal__close-btn"
             onClick={handleResetAndClose}
             aria-label={t.assets.closeBtn}
+            disabled={isSubmitting}
           >
             ✕
           </button>
@@ -127,7 +134,7 @@ export function AssetFormModal({
             />
             {errors.name && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.name}
+                <AlertCircle size={14} /> {t.assets.validation[errors.name]}
               </p>
             )}
           </div>
@@ -153,7 +160,7 @@ export function AssetFormModal({
             </select>
             {errors.assetType && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.assetType}
+                <AlertCircle size={14} /> {t.assets.validation[errors.assetType]}
               </p>
             )}
           </div>
@@ -174,7 +181,7 @@ export function AssetFormModal({
             />
             {errors.payload ? (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.payload}
+                <AlertCircle size={14} /> {t.assets.validation[errors.payload]}
               </p>
             ) : (
               <span className="lv-form-hint">
@@ -201,7 +208,7 @@ export function AssetFormModal({
             />
             {errors.description && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.description}
+                <AlertCircle size={14} /> {t.assets.validation[errors.description]}
               </p>
             )}
           </div>

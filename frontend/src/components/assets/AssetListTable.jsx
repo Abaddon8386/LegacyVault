@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   FileText,
   KeyRound,
@@ -19,47 +18,18 @@ import './AssetListTable.css'
  * Displays contract metadata: name, assetType (TEXT | CREDENTIAL), hasPayload, createdAt.
  * Supports sorting and pagination.
  */
-export function AssetListTable({ assets, t }) {
-  // Sorting state
-  const [sortField, setSortField] = useState('createdAt')
-  const [sortOrder, setSortOrder] = useState('desc')
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-
-  function handleSort(field) {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortField(field)
-      setSortOrder('asc')
-    }
-    setCurrentPage(1)
-  }
-
-  // Client-side sorting on contract fields
-  const sortedAssets = [...assets].sort((a, b) => {
-    let aVal = a[sortField]
-    let bVal = b[sortField]
-
-    if (sortField === 'name' || sortField === 'assetType') {
-      aVal = (aVal || '').toLowerCase()
-      bVal = (bVal || '').toLowerCase()
-    } else if (sortField === 'createdAt') {
-      aVal = new Date(aVal || 0).getTime()
-      bVal = new Date(bVal || 0).getTime()
-    }
-
-    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
-    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1
-    return 0
-  })
-
-  const totalItems = sortedAssets.length
+export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, onQueryChange }) {
+  const [sortField, sortOrder] = query.sort.split(',')
+  const currentPage = query.page + 1
+  const pageSize = query.size
+  const totalItems = totalElements
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-  const startIndex = (currentPage - 1) * pageSize
-  const paginatedAssets = sortedAssets.slice(startIndex, startIndex + pageSize)
+  const startIndex = query.page * pageSize
+  const paginatedAssets = assets
+  function handleSort(field) {
+    const order = sortField === field && sortOrder === 'asc' ? 'desc' : 'asc'
+    onQueryChange({ ...query, page: 0, sort: `${field},${order}` })
+  }
 
   function getTypeMeta(assetType) {
     if (assetType === 'CREDENTIAL') {
@@ -78,7 +48,7 @@ export function AssetListTable({ assets, t }) {
 
   function formatDate(isoString) {
     if (!isoString) return '—'
-    return new Date(isoString).toLocaleDateString('vi-VN', {
+    return new Date(isoString).toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -103,14 +73,18 @@ export function AssetListTable({ assets, t }) {
         <table className="lv-table" aria-label={t.assets.title}>
           <thead>
             <tr>
-              <th scope="col" className="lv-th-sortable" onClick={() => handleSort('name')}>
+              <th scope="col" className="lv-th-sortable" tabIndex={0} aria-sort={sortField === 'name' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleSort('name') } }}
+                onClick={() => handleSort('name')}>
                 <div className="lv-th-content">
                   <span>{t.assets.colName}</span>
                   {renderSortIcon('name')}
                 </div>
               </th>
 
-              <th scope="col" className="lv-th-sortable" onClick={() => handleSort('assetType')}>
+              <th scope="col" className="lv-th-sortable" tabIndex={0} aria-sort={sortField === 'assetType' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleSort('assetType') } }}
+                onClick={() => handleSort('assetType')}>
                 <div className="lv-th-content">
                   <span>{t.assets.colType}</span>
                   {renderSortIcon('assetType')}
@@ -124,6 +98,8 @@ export function AssetListTable({ assets, t }) {
               <th
                 scope="col"
                 className="lv-col-tablet-hide lv-th-sortable"
+                tabIndex={0} aria-sort={sortField === 'createdAt' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleSort('createdAt') } }}
                 onClick={() => handleSort('createdAt')}
               >
                 <div className="lv-th-content">
@@ -257,8 +233,7 @@ export function AssetListTable({ assets, t }) {
               id="page-size-select"
               value={pageSize}
               onChange={(e) => {
-                setPageSize(Number(e.target.value))
-                setCurrentPage(1)
+                onQueryChange({ ...query, size: Number(e.target.value), page: 0 })
               }}
             >
               <option value={5}>5</option>
@@ -273,7 +248,7 @@ export function AssetListTable({ assets, t }) {
               variant="secondary"
               size="sm"
               disabled={currentPage <= 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={() => onQueryChange({ ...query, page: Math.max(0, query.page - 1) })}
             >
               <ChevronLeft size={15} />
               <span>{t.assets.pagination.prev}</span>
@@ -285,7 +260,7 @@ export function AssetListTable({ assets, t }) {
               variant="secondary"
               size="sm"
               disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => onQueryChange({ ...query, page: Math.min(totalPages - 1, query.page + 1) })}
             >
               <span>{t.assets.pagination.next}</span>
               <ChevronRight size={15} />

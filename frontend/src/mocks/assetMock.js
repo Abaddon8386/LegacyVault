@@ -1,8 +1,8 @@
 /**
- * Mock data and storage simulation for Assets (PS-5 Contract Alignment).
+ * Memory-only DEV preview data for Assets (PS-5 Contract Alignment).
  * All mock data and simulation logic belong strictly in src/mocks/.
  *
- * NOTE: Fields strictly align with the current Asset API Contract (AssetResponse):
+ * NOTE: Fields strictly align with the proposed PS-74 Asset API contract (AssetResponse):
  * - id: UUID string
  * - vaultId: UUID string
  * - name: string (<= 150)
@@ -13,12 +13,11 @@
  * - updatedAt: ISO 8601 UTC string
  *
  * SECURITY: payload is write-only. It is processed, discarded, and NEVER
- * stored in plaintext in localStorage or returned in mock responses.
+ * persisted to browser storage or returned in preview responses.
  */
 
 export const DEFAULT_MOCK_VAULT_ID = '00000000-0000-0000-0000-000000000001'
 
-const STORAGE_KEY = 'legacyvault_mock_assets_v2'
 
 export function generateMockUUID() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -64,26 +63,10 @@ export const INITIAL_MOCK_ASSETS = [
   },
 ]
 
-function getStoredAssets() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MOCK_ASSETS))
-      return INITIAL_MOCK_ASSETS
-    }
-    return JSON.parse(raw)
-  } catch {
-    return INITIAL_MOCK_ASSETS
-  }
-}
+let previewAssets = INITIAL_MOCK_ASSETS.map(item => ({ ...item }))
 
-function saveStoredAssets(assets) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets))
-  } catch {
-    // Fail gracefully — do not log sensitive payloads
-  }
-}
+function getStoredAssets() { return previewAssets.map(item => ({ ...item })) }
+function saveStoredAssets(assets) { previewAssets = assets }
 
 export const assetMock = {
   /**
@@ -99,7 +82,7 @@ export const assetMock = {
   },
 
   /**
-   * Mock createAsset with simulated latency and storage.
+   * Mock createAsset with simulated latency and memory-only metadata.
    * @param {Object} assetData - { name, assetType, description, payload, vaultId }
    * @returns {Promise<Object>} AssetResponse (no payload included)
    */
@@ -123,7 +106,7 @@ export const assetMock = {
       updatedAt: now,
     }
 
-    // Persist to storage without plaintext payload
+    // Keep only preview metadata in memory, never persist user inputs
     const current = getStoredAssets()
     saveStoredAssets([newAsset, ...current])
 

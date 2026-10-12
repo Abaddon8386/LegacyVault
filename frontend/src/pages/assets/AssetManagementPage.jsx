@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Plus,
   Search,
@@ -10,8 +10,7 @@ import {
   CheckCircle2,
   X,
 } from 'lucide-react'
-import { assetService } from '../../services/assetService'
-import { DEFAULT_MOCK_VAULT_ID } from '../../mocks/assetMock'
+import { assetService, isAssetPreview } from '../../services/assetService'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { AssetListTable } from '../../components/assets/AssetListTable'
@@ -26,7 +25,19 @@ const LEGAL_DISMISSED_KEY = 'legacyvault_legal_notice_dismissed'
  * Loads assets on mount, shows loading/error/empty states.
  * Allows adding a new asset via a validated form modal with write-only payload.
  */
-export function AssetManagementPage({ t }) {
+export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
+  isDevPreview = false, onNavigateToLogin, onRefreshTrigger = 0 }) {
+  const preview = isAssetPreview({ isDevPreview })
+  const [query, setQuery] = useState({ page: 0, size: 10, sort: 'createdAt,desc' })
+  const [totalElements, setTotalElements] = useState(0)
+  const [retry, setRetry] = useState(0)
+  const submittingRef = useRef(false)
+  const aliveRef = useRef(true)
+  useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false } }, [])
+  const toastTimer = useRef(null)
+  const requestContext = useRef(null)
+  useEffect(() => { requestContext.current = { lang } }, [lang])
+
   const [assets, setAssets] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -48,47 +59,45 @@ export function AssetManagementPage({ t }) {
   })
   const [showLegalInfoModal, setShowLegalInfoModal] = useState(false)
 
-  const showToast = useCallback((msg, type = 'success') => {
-    setToastMessage({ msg, type })
-    setTimeout(() => {
-      setToastMessage(null)
-    }, 3500)
+  const showToast = useCallback((key, type = 'success') => {
+    clearTimeout(toastTimer.current)
+    setToastMessage({ key, type })
+    toastTimer.current = setTimeout(() => setToastMessage(null), 3500)
   }, [])
-
-  const loadAssets = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await assetService.getAssets(DEFAULT_MOCK_VAULT_ID)
-      setAssets(data)
-    } catch {
-      setError(t.assets.alerts.loadError)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [t.assets.alerts.loadError])
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   useEffect(() => {
-    let isMounted = true
-    async function fetchInitialData() {
+    const controller = new AbortController()
+    let active = true
+    async function load() {
+      await Promise.resolve()
+      if (!active) return
+      setIsLoading(true)
+      setError(null)
+      setAssets([])
       try {
-        const data = await assetService.getAssets(DEFAULT_MOCK_VAULT_ID)
-        if (isMounted) {
-          setAssets(data)
-          setIsLoading(false)
+        const data = await assetService.getAssets(vaultId, {
+          ...query, lang: requestContext.current.lang, accessToken, isDevPreview,
+          signal: controller.signal,
+        })
+        if (!active) return
+        if (query.page > 0 && data.content.length === 0) {
+          setQuery(prev => ({ ...prev, page: 0 }))
+          return
         }
-      } catch {
-        if (isMounted) {
-          setError(t.assets.alerts.loadError)
-          setIsLoading(false)
-        }
+        setAssets(data.content)
+        setTotalElements(data.totalElements)
+      } catch (error) {
+        if (active && error.name !== 'AbortError') setError(error.code || 'loadError')
+      } finally {
+        if (active) setIsLoading(false)
       }
     }
-    fetchInitialData()
-    return () => {
-      isMounted = false
-    }
-  }, [t.assets.alerts.loadError])
+    load()
+    return () => { active = false; controller.abort() }
+  }, [vaultId, accessToken, isDevPreview, query, retry, onRefreshTrigger])
+
+  const loadAssets = () => setRetry(value => value + 1)
 
   function handleDismissLegalNotice() {
     setIsLegalDismissed(true)
@@ -100,16 +109,22 @@ export function AssetManagementPage({ t }) {
   }
 
   async function handleAddAsset(formData) {
+    if (submittingRef.current) return
+    submittingRef.current = true
     setIsSubmitting(true)
     try {
-      const created = await assetService.createAsset(DEFAULT_MOCK_VAULT_ID, formData)
-      setAssets((prev) => [created, ...prev])
+      await assetService.createAsset(vaultId, formData, { lang, accessToken, isDevPreview })
+      if (!aliveRef.current) return
       setIsAddModalOpen(false)
-      showToast(t.assets.alerts.addSuccess, 'success')
-    } catch {
-      showToast(t.assets.alerts.saveError, 'error')
+      setSearchQuery('')
+      setSelectedAssetType('ALL')
+      setQuery(prev => ({ ...prev, page: 0, sort: 'createdAt,desc' }))
+      showToast(preview ? 'previewSaved' : 'addSuccess')
+    } catch (error) {
+      if (aliveRef.current) showToast(error.code || 'saveError', 'error')
     } finally {
-      setIsSubmitting(false)
+      submittingRef.current = false
+      if (aliveRef.current) setIsSubmitting(false)
     }
   }
 
@@ -127,7 +142,7 @@ export function AssetManagementPage({ t }) {
     })
   }, [assets, selectedAssetType, searchQuery])
 
-  const hasAnyAssets = assets.length > 0
+  const hasAnyAssets = totalElements > 0
   const isSearchNoResults = hasAnyAssets && filteredAssets.length === 0
 
   return (
@@ -144,10 +159,11 @@ export function AssetManagementPage({ t }) {
           ) : (
             <AlertTriangle size={16} />
           )}
-          <span>{toastMessage.msg}</span>
+          <span>{t.assets.alerts[toastMessage.key] || t.assets.alerts.saveError}</span>
         </div>
       )}
 
+      {preview && <p className="lv-preview-notice" role="note">{t.assets.previewNotice}</p>}
       {/* Page Header */}
       <div className="lv-page-header">
         <div className="lv-page-header__left">
@@ -172,6 +188,8 @@ export function AssetManagementPage({ t }) {
           variant="primary"
           onClick={() => setIsAddModalOpen(true)}
           className="lv-add-btn"
+          aria-label={t.assets.addNewBtn}
+          disabled={isLoading || Boolean(error)}
         >
           <Plus size={18} />
           <span className="lv-add-btn__text">{t.assets.addNewBtn}</span>
@@ -201,6 +219,8 @@ export function AssetManagementPage({ t }) {
         <AssetSummaryCards assets={filteredAssets} t={t} />
       )}
 
+      {/* Filters apply to the current server page; no global search contract exists. */}
+      {!isLoading && !error && hasAnyAssets && <p className="lv-filter-scope">{t.assets.pageScope}</p>}
       {/* Filter and Search Bar */}
       <div className="lv-filter-bar">
         <div className="lv-search-box">
@@ -209,6 +229,7 @@ export function AssetManagementPage({ t }) {
             type="text"
             className="lv-search-input"
             placeholder={t.assets.searchPlaceholder}
+            aria-label={t.assets.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -239,7 +260,8 @@ export function AssetManagementPage({ t }) {
         <div className="lv-error-card" role="alert">
           <AlertTriangle size={32} className="lv-error-icon" />
           <h3>{t.assets.errorTitle}</h3>
-          <p>{error}</p>
+          <p>{t.assets.alerts[error] || t.assets.alerts.loadError}</p>
+          {error === 'UNAUTHENTICATED' && onNavigateToLogin && <Button onClick={onNavigateToLogin}>{t.assets.signIn}</Button>}
           <Button variant="secondary" onClick={loadAssets}>
             <RefreshCw size={14} />
             <span>{t.assets.alerts.retryBtn}</span>
@@ -257,7 +279,9 @@ export function AssetManagementPage({ t }) {
             <span>{t.assets.emptyAction}</span>
           </Button>
         </div>
-      ) : isSearchNoResults ? (
+      ) : (
+        <>
+        {isSearchNoResults && (
         <div className="lv-empty-card">
           <div className="lv-empty-icon-wrap">
             <Search size={32} />
@@ -280,16 +304,21 @@ export function AssetManagementPage({ t }) {
             </Button>
           </div>
         </div>
-      ) : (
-        <AssetListTable assets={filteredAssets} t={t} />
+        )}
+        <AssetListTable assets={filteredAssets} t={t} lang={lang}
+          query={query} totalElements={totalElements}
+          onQueryChange={next => { setIsLoading(true); setQuery(next) }} />
+        </>
       )}
 
       {/* Floating Action Button for mobile */}
       <button
         type="button"
         className="lv-mobile-fab"
+        style={{ visibility: isAddModalOpen ? 'hidden' : undefined }}
         onClick={() => setIsAddModalOpen(true)}
         aria-label={t.assets.addNewBtn}
+        disabled={isLoading || Boolean(error)}
       >
         <Plus size={24} />
       </button>
@@ -299,6 +328,7 @@ export function AssetManagementPage({ t }) {
         isOpen={showLegalInfoModal}
         onClose={() => setShowLegalInfoModal(false)}
         title={t.assets.legalNoticeModalTitle}
+        closeLabel={t.assets.closeBtn}
       >
         <div className="lv-legal-modal-body">
           <Info size={28} className="lv-notice-icon" />
@@ -312,13 +342,13 @@ export function AssetManagementPage({ t }) {
       </Modal>
 
       {/* Add Asset Modal */}
-      <AssetFormModal
-        isOpen={isAddModalOpen}
+      {isAddModalOpen && <AssetFormModal
+        isOpen={true}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddAsset}
         t={t}
         isSubmitting={isSubmitting}
-      />
+      />}
     </div>
   )
 }

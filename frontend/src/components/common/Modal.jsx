@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useModalFocus } from './useModalFocus'
 import { X } from 'lucide-react'
 import './Modal.css'
 
@@ -9,26 +9,9 @@ export function Modal({
   description,
   children,
   maxWidth = '540px',
+  closeLabel = 'Đóng',
 }) {
-  const modalRef = useRef(null)
-
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape' && isOpen) {
-        onClose()
-      }
-    }
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleKeyDown)
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isOpen, onClose])
+  const modalRef = useModalFocus(isOpen, onClose)
 
   if (!isOpen) return null
 
@@ -40,6 +23,7 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby="lv-modal-title"
         ref={modalRef}
       >
@@ -54,7 +38,7 @@ export function Modal({
             type="button"
             className="lv-modal__close-btn"
             onClick={onClose}
-            aria-label="Đóng cửa sổ"
+            aria-label={closeLabel}
           >
             <X size={18} />
           </button>

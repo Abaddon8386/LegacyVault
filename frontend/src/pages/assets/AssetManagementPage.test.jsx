@@ -37,7 +37,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   ]
 
   it('renders loading state initially and then shows asset list with summary cards', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -62,7 +62,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('collapses legal notice when clicking "Đã hiểu" and shows ⓘ icon', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -84,7 +84,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('filters assets by search keyword', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -100,7 +100,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('filters assets by assetType (TEXT vs CREDENTIAL)', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -116,7 +116,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('validates required fields before allowing asset creation', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -147,7 +147,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('creates asset with write-only payload and ensures payload is not in DOM or localStorage', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     const secretPassword = 'SUPER_CONFIDENTIAL_KEY_987654321'
     const newMockAsset = {
@@ -160,7 +160,10 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
       createdAt: '2026-10-12T00:00:00Z',
       updatedAt: '2026-10-12T00:00:00Z',
     }
-    vi.spyOn(assetService, 'createAsset').mockResolvedValue(newMockAsset)
+    vi.spyOn(assetService, 'createAsset').mockImplementation(async () => {
+      assetService.getAssets.mockResolvedValue({ content: [newMockAsset, ...mockAssets], totalElements: 3 })
+      return newMockAsset
+    })
 
     render(<AssetManagementPage t={t} />)
 
