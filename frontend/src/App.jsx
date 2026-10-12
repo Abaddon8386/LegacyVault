@@ -6,6 +6,7 @@ import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
 import { translations } from './i18n/translations';
 import { AssetManagementPage } from './pages/assets/AssetManagementPage';
 import WillUploadPage from './pages/wills/WillUploadPage.jsx';
+import TrusteeBeneficiaryPage from './pages/trusteeBeneficiary/TrusteeBeneficiaryPage.jsx';
 import AppShell from './components/layout/AppShell.jsx';
 
 function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
@@ -175,8 +176,10 @@ export default function App() {
 
   const isWillRoute = currentPath === '/wills' || currentPath === '/wills/upload';
 
-  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute || isWillRoute)) {
-    const activeTab = isWillRoute ? 'wills' : isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
+  const isPeopleRoute = currentPath === '/people' || currentPath === '/trustee-beneficiary';
+
+  if (isDev && (isPeopleRoute || isVaultRoute || isDmsRoute || isAssetRoute || isWillRoute)) {
+    const activeTab = isPeopleRoute ? 'beneficiaries' : isWillRoute ? 'wills' : isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
 
     return (
       <div className="lv-app-root">
@@ -185,10 +188,12 @@ export default function App() {
           lang={lang}
           onToggleLang={setLang}
           onLogout={() => navigateTo('/login')}
-          onRefresh={isWillRoute ? undefined : handleRefresh}
+          onRefresh={isWillRoute || isPeopleRoute ? undefined : handleRefresh}
           isRefreshing={isRefreshing}
           onNavigateTab={(tab) => {
-            if (tab === 'wills') {
+            if (tab === 'beneficiaries') {
+              navigateTo(hasPreviewParam ? '/people?preview=true' : '/people');
+            } else if (tab === 'wills') {
               navigateTo(hasPreviewParam ? '/wills?preview=true' : '/wills');
             } else if (tab === 'vault') {
               navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
@@ -199,7 +204,9 @@ export default function App() {
             }
           }}
         >
-          {isWillRoute ? (
+          {isPeopleRoute ? (
+            <TrusteeBeneficiaryPage lang={lang} isDevPreview={hasPreviewParam}/>
+          ) : isWillRoute ? (
             <WillUploadPage key={hasPreviewParam ? 'preview-wills' : 'live-wills'} lang={lang} isDevPreview={hasPreviewParam} />
           ) : isAssetRoute ? (
             <AssetManagementPage

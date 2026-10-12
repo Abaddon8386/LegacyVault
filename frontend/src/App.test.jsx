@@ -60,3 +60,10 @@ it('blocks protected Will upload in production even with preview URL', () => {
   vi.stubEnv('PROD', true); window.history.replaceState({}, '', '/wills?preview=true'); render(<App />);
   expect(screen.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeInTheDocument();
 });
+
+
+it('does not expose protected PS-8 forms in production through preview URL', () => {
+  vi.stubEnv('PROD',true);window.history.replaceState({},'', '/people?preview=true');render(<App/>);
+  expect(screen.getByRole('heading',{name:'Không tìm thấy trang'})).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Thêm người thụ hưởng'})).not.toBeInTheDocument();
+});
