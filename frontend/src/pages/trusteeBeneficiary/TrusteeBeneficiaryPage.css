@@ -573,3 +573,19 @@
   color: #b71c1c;
   border: 1px solid rgba(211, 47, 47, 0.25);
 }
+
+/* Shared shell owns the page header and spacing. */
+.lv-tb-page { min-height:0; padding:4px 0 40px; }
+.lv-tb-page fieldset { border:0; padding:0; margin:0; min-width:0; }
+.lv-tb-page input,.lv-tb-page textarea,.lv-tb-page button { font-family:inherit; }
+.lv-tb-page button:disabled { opacity:.6; cursor:default; }
+.lv-tb-page :focus-visible { outline:3px solid #c5a059; outline-offset:3px; }
+.lv-tb-entity-card { overflow-wrap:anywhere; }
+.lv-tb-entity-prop dd { margin:4px 0 0; }
+.lv-tb-readiness-banner { margin-bottom:24px; }
+@media(max-width:640px) {
+  .lv-tb-section-header,.lv-tb-readiness-header { flex-wrap:wrap; gap:14px; }
+  .lv-tb-section-card { padding:20px 16px; }
+  .lv-tb-alert { flex-wrap:wrap; gap:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .lv-tb-page * { animation:none!important; transition:none!important; } }

@@ -1,276 +1,98 @@
-/**
- * LegacyVault — Trustee & Beneficiary Service (PS-8 / ST-04-05)
- *
- * SPECIFICATION & SAFETY BOUNDARIES:
- * - Trustee Contract:
- *   POST /api/v1/trustees
- *   GET /api/v1/trustees?vaultId={vaultId}
- * - Beneficiary Contract:
- *   POST /api/v1/vaults/{vaultId}/beneficiaries
- *   GET /api/v1/vaults/{vaultId}/beneficiaries
- *
- * CRITICAL BUSINESS RULES & CONSTRAINTS:
- * 1. Trustee is OPTIONAL (user may skip Trustee in UI; no skip endpoint exists in contract).
- * 2. Trustee status is strictly: APPOINTED | REVOKED.
- * 3. Trustee does NOT need an account (no userId, no login credentials).
- * 4. Trustee has NO unlock/decrypt/view-secret permissions.
- * 5. Trustee is NOT automatically a Beneficiary.
- * 6. Max 1 current Trustee per Vault (duplicate returns 409 TRUSTEE_ALREADY_EXISTS).
- * 7. Beneficiary does NOT need an account (no userId, no account creation).
- * 8. Beneficiary has NO Claim Link, NO Guest Portal, NO Beneficiary OTP.
- * 9. NO allocation percentage or share ratio.
- * 10. At least 1 Beneficiary is required for configuration readiness.
- * 11. In mock mode, operates safely in memory without fabricating user credentials.
- */
-
+import { validateTrustee } from './trusteeValidation.js';
+import { validateBeneficiary } from './beneficiaryValidation.js';
 export const DEFAULT_VAULT_ID = '00000000-0000-0000-0000-000000000001';
-
-/**
- * In-memory Mock Storage for Local Dev / Testing
- */
-const mockStore = {
-  trustees: new Map(), // vaultId -> Array<Trustee>
-  beneficiaries: new Map(), // vaultId -> Array<Beneficiary>
-};
-
-/**
- * Generate standard UUID v4 for mock records
- */
-function generateMockUuid() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+const stores = { trustee: new Map(), beneficiary: new Map() };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const error = (code, status) => Object.assign(new Error(code), { code, status });
+const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
+const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
+export function resetMockData() { stores.trustee.clear(); stores.beneficiary.clear(); }
+export function isPeoplePreview(options = {}) {
+  const env = import.meta.env;
+  if (env?.PROD) return false;
+  return Boolean(options.isDevPreview && (env?.DEV || (!env && options.isTest && globalThis.process?.versions?.node)));
 }
-
-/**
- * Reset all mock data (useful for test isolation)
- */
-export function resetMockData() {
-  mockStore.trustees.clear();
-  mockStore.beneficiaries.clear();
+function context(vaultId, options) {
+  if (options.signal?.aborted) throw error('ABORTED');
+  const preview = isPeoplePreview(options);
+  const id = preview ? vaultId || DEFAULT_VAULT_ID : vaultId;
+  if (!UUID.test(id || '')) throw error('BACKEND_NOT_READY');
+  return { id, preview };
 }
-
-/**
- * Get active (APPOINTED) Trustee for a given Vault
- *
- * @param {string} vaultId
- * @returns {Promise<Array<Object>>} List of appointed trustees (max 1)
- */
-export async function getTrustees(vaultId = DEFAULT_VAULT_ID) {
-  try {
-    const response = await fetch(`/api/v1/trustees?vaultId=${encodeURIComponent(vaultId)}`, {
-      headers: { Accept: 'application/json' },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const list = Array.isArray(data) ? data : data.items || [];
-      return list.filter((t) => t.status === 'APPOINTED');
-    }
-  } catch {
-    // Backend API unavailable; fallback to in-memory mock store
-  }
-
-  const list = mockStore.trustees.get(vaultId) || [];
-  return list.filter((t) => t.status === 'APPOINTED');
+function payload(kind, data) {
+  const fields = kind === 'trustee' ? ['fullName','phone','email','relationship','note'] : ['fullName','phone','email','relationship','dateOfBirth'];
+  const result = Object.fromEntries(fields.map(key => [key, typeof data[key] === 'string' ? data[key].trim() || null : null]));
+  const errors = (kind === 'trustee' ? validateTrustee : validateBeneficiary)(result);
+  if (Object.keys(errors).length) throw error('VALIDATION_FAILED');
+  return result;
 }
-
-/**
- * Add a new Trustee to the Vault
- *
- * Business rule: Max 1 current Trustee per Vault.
- * Status must be APPOINTED.
- * Duplicate returns 409 TRUSTEE_ALREADY_EXISTS.
- *
- * @param {string} vaultId
- * @param {Object} trusteeData
- * @param {string} trusteeData.fullName
- * @param {string} [trusteeData.phone]
- * @param {string} [trusteeData.email]
- * @param {string} [trusteeData.relationship]
- * @param {string} [trusteeData.note]
- * @returns {Promise<Object>} Created TrusteeResponse
- */
-export async function createTrustee(vaultId = DEFAULT_VAULT_ID, trusteeData = {}) {
-  const payload = {
-    vaultId,
-    fullName: (trusteeData.fullName || '').trim(),
-    phone: (trusteeData.phone || '').trim() || null,
-    email: (trusteeData.email || '').trim() || null,
-    relationship: (trusteeData.relationship || '').trim() || null,
-    note: (trusteeData.note || '').trim() || null,
-  };
-
-  try {
-    const response = await fetch('/api/v1/trustees', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      return await response.json();
-    }
-
+function record(kind, data, vaultId, creation = false) {
+  if (!UUID.test(data?.id || '') || data.vaultId !== vaultId || !text(data.fullName,150) || !date(data.createdAt) || !date(data.updatedAt) ||
+      (kind === 'trustee' ? !['APPOINTED','REVOKED'].includes(data.status) || (creation && data.status !== 'APPOINTED') : data.status !== 'DESIGNATED' || data.hasAccount !== false)) throw error('BACKEND_NOT_READY');
+  const fields = kind === 'trustee' ? ['phone','email','relationship','note'] : ['phone','email','relationship','dateOfBirth'];
+  if (fields.some(key => data[key] != null && typeof data[key] !== 'string')) throw error('BACKEND_NOT_READY');
+  let safe; try { safe = payload(kind,data); } catch { throw error('BACKEND_NOT_READY'); }
+  return { id:data.id, vaultId, ...safe, status:data.status, createdAt:data.createdAt, updatedAt:data.updatedAt, ...(kind === 'beneficiary' ? { hasAccount:false } : {}) };
+}
+async function request(url, method, body, options) {
+  const headers = { Accept:'application/json', 'Accept-Language':options.lang === 'en' ? 'en' : 'vi' };
+  if (body) headers['Content-Type'] = 'application/json';
+  if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+  let response;
+  try { response = await fetch(url, { method, headers, signal:options.signal, ...(body ? {body:JSON.stringify(body)} : {}) }); }
+  catch { throw error(options.signal?.aborted ? 'ABORTED' : 'NETWORK_ERROR'); }
+  if (response.status !== (method === 'POST' ? 201 : 200)) {
+    let code = {400:'VALIDATION_FAILED',401:'UNAUTHORIZED',403:'FORBIDDEN',404:'NOT_FOUND'}[response.status] || (response.status >= 500 ? 'SERVICE_UNAVAILABLE' : 'BACKEND_NOT_READY');
     if (response.status === 409) {
-      const errData = await response.json().catch(() => ({}));
-      const error = new Error(errData.message || 'Mỗi két chỉ có tối đa 1 Người giám hộ hiện tại.');
-      error.code = errData.code || 'TRUSTEE_ALREADY_EXISTS';
-      error.status = 409;
-      throw error;
+      let parsed; try { parsed = await response.json(); } catch { /* no raw message */ }
+      code = parsed?.code === 'TRUSTEE_ALREADY_EXISTS' ? 'TRUSTEE_ALREADY_EXISTS' : 'VAULT_NOT_EDITABLE';
     }
-  } catch (err) {
-    if (err.code === 'TRUSTEE_ALREADY_EXISTS') {
-      throw err;
-    }
-    // Fallback to mock simulation
+    throw error(code,response.status);
   }
-
-  // Enforce Max 1 APPOINTED Trustee rule in mock mode
-  const currentList = mockStore.trustees.get(vaultId) || [];
-  const appointedCount = currentList.filter((t) => t.status === 'APPOINTED').length;
-  if (appointedCount >= 1) {
-    const error = new Error('Mỗi két chỉ có tối đa 1 Người giám hộ hiện tại.');
-    error.code = 'TRUSTEE_ALREADY_EXISTS';
-    error.status = 409;
-    throw error;
-  }
-
-  const now = new Date().toISOString();
-  const createdTrustee = {
-    id: generateMockUuid(),
-    vaultId,
-    fullName: payload.fullName,
-    phone: payload.phone,
-    email: payload.email,
-    relationship: payload.relationship,
-    note: payload.note,
-    status: 'APPOINTED',
-    createdAt: now,
-    updatedAt: now,
-    // Explicitly NO userId or unlock capability
-  };
-
-  currentList.push(createdTrustee);
-  mockStore.trustees.set(vaultId, currentList);
-
-  return createdTrustee;
-}
-
-/**
- * Get all Beneficiaries for a Vault
- *
- * @param {string} vaultId
- * @returns {Promise<Array<Object>>}
- */
-export async function getBeneficiaries(vaultId = DEFAULT_VAULT_ID) {
   try {
-    const response = await fetch(`/api/v1/vaults/${encodeURIComponent(vaultId)}/beneficiaries`, {
-      headers: { Accept: 'application/json' },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return Array.isArray(data) ? data : data.items || [];
-    }
-  } catch {
-    // Fallback to mock store
-  }
-
-  return mockStore.beneficiaries.get(vaultId) || [];
+    if (!/application\/(?:[a-z0-9.+-]*\+)?json/i.test(response.headers.get('content-type') || '')) throw error('BACKEND_NOT_READY');
+    return await response.json();
+  } catch { throw error('BACKEND_NOT_READY'); }
 }
-
-/**
- * Add a new Beneficiary to a Vault.
- *
- * Business rules:
- * - Beneficiary does NOT need an account (no userId).
- * - No Claim Link, no Guest Portal, no Beneficiary OTP.
- * - No allocation percentage or share ratio.
- *
- * @param {string} vaultId
- * @param {Object} beneficiaryData
- * @param {string} beneficiaryData.fullName
- * @param {string} [beneficiaryData.relationship]
- * @param {string} [beneficiaryData.dateOfBirth] YYYY-MM-DD
- * @param {string} [beneficiaryData.phone]
- * @param {string} [beneficiaryData.email]
- * @returns {Promise<Object>} Created BeneficiaryResponse
- */
-export async function createBeneficiary(vaultId = DEFAULT_VAULT_ID, beneficiaryData = {}) {
-  const payload = {
-    fullName: (beneficiaryData.fullName || '').trim(),
-    relationship: (beneficiaryData.relationship || '').trim() || null,
-    dateOfBirth: beneficiaryData.dateOfBirth ? String(beneficiaryData.dateOfBirth).trim() : null,
-    phone: (beneficiaryData.phone || '').trim() || null,
-    email: (beneficiaryData.email || '').trim() || null,
-  };
-
-  try {
-    const response = await fetch(`/api/v1/vaults/${encodeURIComponent(vaultId)}/beneficiaries`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      return await response.json();
-    }
-  } catch {
-    // Fallback to mock simulation
+async function list(kind, vaultId, options = {}) {
+  const {id,preview} = context(vaultId,options);
+  if (preview) {
+    const all = (stores[kind].get(id) || []).map(item => structuredClone(item));
+    const current = kind === 'trustee' ? all.filter(item => item.status === 'APPOINTED') : all;
+    return Object.assign(current, { totalElements:current.length });
   }
-
-  const currentList = mockStore.beneficiaries.get(vaultId) || [];
-  const now = new Date().toISOString();
-
-  const createdBeneficiary = {
-    id: generateMockUuid(),
-    vaultId,
-    fullName: payload.fullName,
-    relationship: payload.relationship,
-    dateOfBirth: payload.dateOfBirth,
-    phone: payload.phone,
-    email: payload.email,
-    createdAt: now,
-    updatedAt: now,
-    // Explicitly NO userId, NO claim link, NO OTP, NO allocation percentage
-  };
-
-  currentList.push(createdBeneficiary);
-  mockStore.beneficiaries.set(vaultId, currentList);
-
-  return createdBeneficiary;
+  const page = Number.isSafeInteger(options.page) && options.page >= 0 ? options.page : 0;
+  const url = kind === 'trustee' ? `/api/v1/trustees?vaultId=${encodeURIComponent(id)}` : `/api/v1/vaults/${id}/beneficiaries?page=${page}&size=20`;
+  const data = await request(url,'GET',null,options);
+  if (!Array.isArray(data?.content) || !Number.isSafeInteger(data.totalElements) || data.totalElements < data.content.length || (kind === 'trustee' && data.totalElements > 1) ||
+      (data.totalElements > page * 20 && data.content.length === 0)) throw error('BACKEND_NOT_READY');
+  let items = data.content.map(item => record(kind,item,id));
+  if (new Set(items.map(item => item.id)).size !== items.length) throw error('BACKEND_NOT_READY');
+  if (kind === 'trustee') items = items.filter(item => item.status === 'APPOINTED');
+  return Object.assign(items,{totalElements:kind === 'trustee' ? items.length : data.totalElements});
 }
-
-/**
- * Determine whether the Vault setup meets configuration readiness:
- * - At least 1 Beneficiary is required for readiness.
- * - Trustee is optional.
- *
- * @param {string} vaultId
- * @returns {Promise<{ isReady: boolean, beneficiaryCount: number, hasTrustee: boolean }>}
- */
-export async function checkConfigurationReadiness(vaultId = DEFAULT_VAULT_ID) {
-  const trustees = await getTrustees(vaultId);
-  const beneficiaries = await getBeneficiaries(vaultId);
-
-  const hasBeneficiary = beneficiaries.length >= 1;
-  const hasTrustee = trustees.length > 0;
-
-  return {
-    isReady: hasBeneficiary,
-    beneficiaryCount: beneficiaries.length,
-    hasTrustee,
-  };
+async function create(kind,vaultId,data,options = {}) {
+  const {id,preview} = context(vaultId,options);
+  const body = payload(kind,data);
+  if (preview) {
+    const all = stores[kind].get(id) || [];
+    if (kind === 'trustee' && all.some(item => item.status === 'APPOINTED')) throw error('TRUSTEE_ALREADY_EXISTS',409);
+    const now = new Date().toISOString();
+    const created = record(kind,{id:globalThis.crypto.randomUUID(),vaultId:id,...body,status:kind === 'trustee' ? 'APPOINTED' : 'DESIGNATED',hasAccount:false,createdAt:now,updatedAt:now},id,true);
+    stores[kind].set(id,[...all,created]); return structuredClone(created);
+  }
+  const url = kind === 'trustee' ? '/api/v1/trustees' : `/api/v1/vaults/${id}/beneficiaries`;
+  const dataResult = await request(url,'POST',kind === 'trustee' ? {vaultId:id,...body} : body,options);
+  const created = record(kind,dataResult,id,true);
+  if (created.fullName !== body.fullName) throw error('BACKEND_NOT_READY');
+  return created;
+}
+export const getTrustees = (id,options) => list('trustee',id,options);
+export const getBeneficiaries = (id,options) => list('beneficiary',id,options);
+export const createTrustee = (id,data,options) => create('trustee',id,data,options);
+export const createBeneficiary = (id,data,options) => create('beneficiary',id,data,options);
+// This is only the people requirement, never a declaration that the whole Vault/DMS is ready.
+export async function checkConfigurationReadiness(id,options) {
+  const [trustees,beneficiaries] = await Promise.all([getTrustees(id,options),getBeneficiaries(id,options)]);
+  return {isReady:beneficiaries.totalElements >= 1,beneficiaryCount:beneficiaries.totalElements,hasTrustee:trustees.length > 0};
 }

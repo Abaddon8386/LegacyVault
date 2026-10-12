@@ -70,16 +70,14 @@ export function validateBeneficiary(values = {}, lang = 'vi') {
   if (values.dateOfBirth) {
     const dobString = String(values.dateOfBirth).trim();
     if (dobString) {
-      const dob = new Date(dobString);
-      if (Number.isNaN(dob.getTime())) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dobString);
+      const dob = match ? new Date(`${dobString}T00:00:00Z`) : null;
+      if (!dob || !Number.isFinite(dob.getTime()) || dob.toISOString().slice(0,10) !== dobString) {
         errors.dateOfBirth = msgs.dateOfBirthInvalid;
       } else {
         const today = new Date();
-        // Compare date only (midnight)
-        today.setHours(23, 59, 59, 999);
-        if (dob > today) {
-          errors.dateOfBirth = msgs.dateOfBirthFuture;
-        }
+        const todayString = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        if (dobString > todayString) errors.dateOfBirth = msgs.dateOfBirthFuture;
       }
     }
   }

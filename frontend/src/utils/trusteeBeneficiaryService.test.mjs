@@ -3,12 +3,19 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_VAULT_ID,
   resetMockData,
-  getTrustees,
-  createTrustee,
-  getBeneficiaries,
-  createBeneficiary,
-  checkConfigurationReadiness,
+  getTrustees as livegetTrustees,
+  createTrustee as livecreateTrustee,
+  getBeneficiaries as livegetBeneficiaries,
+  createBeneficiary as livecreateBeneficiary,
+  checkConfigurationReadiness as livecheckConfigurationReadiness,
 } from './trusteeBeneficiaryService.js';
+
+const preview = { isDevPreview:true, isTest:true };
+const getTrustees = id => livegetTrustees(id,preview);
+const getBeneficiaries = id => livegetBeneficiaries(id,preview);
+const checkConfigurationReadiness = id => livecheckConfigurationReadiness(id,preview);
+const createTrustee = (id,data) => livecreateTrustee(id,data,preview);
+const createBeneficiary = (id,data) => livecreateBeneficiary(id,data,preview);
 
 describe('Trustee & Beneficiary Service (PS-8 / ST-04-05)', () => {
   beforeEach(() => {

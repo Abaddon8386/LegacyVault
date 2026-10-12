@@ -90,3 +90,10 @@ describe('Beneficiary Validation (PS-8 / ST-05)', () => {
     assert.equal(res.allocation, undefined);
   });
 });
+
+it('rejects impossible calendar dates and non-ISO dates',()=>{
+  for (const dateOfBirth of ['2001-02-29','2000-02-30','2000-13-01','02/12/2000']) {
+    assert.equal(validateBeneficiary({fullName:'Sample',dateOfBirth}).dateOfBirth,beneficiaryValidationMessages.vi.dateOfBirthInvalid);
+  }
+  assert.deepEqual(validateBeneficiary({fullName:'Sample',dateOfBirth:'2000-02-29'}),{});
+});

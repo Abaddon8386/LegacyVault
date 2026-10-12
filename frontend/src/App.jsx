@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import VaultOverviewPage from './pages/vault/VaultOverviewPage.jsx';
+import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
+import { translations } from './i18n/translations';
+import { AssetManagementPage } from './pages/assets/AssetManagementPage';
+import WillUploadPage from './pages/wills/WillUploadPage.jsx';
 import TrusteeBeneficiaryPage from './pages/trusteeBeneficiary/TrusteeBeneficiaryPage.jsx';
+import AppShell from './components/layout/AppShell.jsx';
 
-function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateToTrusteeBeneficiary }) {
+function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
   return (
     <main
       style={{
@@ -21,7 +27,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateT
     >
       <div
         style={{
-          maxWidth: '520px',
+          maxWidth: '480px',
           width: '100%',
           backgroundColor: '#ffffff',
           borderRadius: '16px',
@@ -85,7 +91,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateT
               color: '#ffffff',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 20px',
+              padding: '12px 24px',
               borderRadius: '10px',
               border: 'none',
               cursor: 'pointer',
@@ -107,7 +113,7 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateT
               color: '#164639',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 20px',
+              padding: '12px 24px',
               borderRadius: '10px',
               border: '1px solid #ded9ce',
               cursor: 'pointer',
@@ -115,27 +121,6 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateT
             }}
           >
             <span>Đến trang Đăng nhập</span>
-          </button>
-          <button
-            type="button"
-            onClick={onNavigateToTrusteeBeneficiary}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              backgroundColor: '#164639',
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: '14px',
-              padding: '12px 20px',
-              borderRadius: '10px',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s ease',
-            }}
-          >
-            <span>Người giám hộ & Thụ hưởng</span>
           </button>
         </div>
       </div>
@@ -147,6 +132,9 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
     return typeof window !== 'undefined' ? window.location.pathname : '/register';
   });
+  const [lang, setLang] = useState('vi');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -158,17 +146,95 @@ export default function App() {
 
   const navigateTo = (path) => {
     window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    setCurrentPath(path.split('?')[0]);
   };
 
-  // Các route hợp lệ
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshTrigger((prev) => prev + 1);
+    await new Promise((r) => setTimeout(r, 600));
+    setIsRefreshing(false);
+  };
+
+  // Environment gating
+  const isDev = !import.meta.env.PROD && Boolean(import.meta.env.DEV);
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const hasPreviewParam = searchParams?.get('preview') === 'true';
+
+  // PS-1 routes: /register và / (mặc định mở Register)
   const isRegisterRoute = currentPath === '/register' || currentPath === '/';
+
+  // PS-2 route: /login
   const isLoginRoute = currentPath === '/login';
-  const isTrusteeBeneficiaryRoute =
-    currentPath === '/trustee-beneficiary' ||
-    currentPath === '/trustees' ||
-    currentPath === '/beneficiaries' ||
-    currentPath === '/recipients';
+
+  // PS-3 Vault route:
+  const isVaultRoute = currentPath === '/vault' || currentPath === '/vaults';
+
+  // PS-4 DMS route:
+  const isDmsRoute = currentPath === '/dms';
+  const isAssetRoute = currentPath === '/assets' || currentPath === '/dashboard';
+
+  const isWillRoute = currentPath === '/wills' || currentPath === '/wills/upload';
+
+  const isPeopleRoute = currentPath === '/people' || currentPath === '/trustee-beneficiary';
+
+  if (isDev && (isPeopleRoute || isVaultRoute || isDmsRoute || isAssetRoute || isWillRoute)) {
+    const activeTab = isPeopleRoute ? 'beneficiaries' : isWillRoute ? 'wills' : isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
+
+    return (
+      <div className="lv-app-root">
+        <AppShell
+          currentTab={activeTab}
+          lang={lang}
+          onToggleLang={setLang}
+          onLogout={() => navigateTo('/login')}
+          onRefresh={isWillRoute || isPeopleRoute ? undefined : handleRefresh}
+          isRefreshing={isRefreshing}
+          onNavigateTab={(tab) => {
+            if (tab === 'beneficiaries') {
+              navigateTo(hasPreviewParam ? '/people?preview=true' : '/people');
+            } else if (tab === 'wills') {
+              navigateTo(hasPreviewParam ? '/wills?preview=true' : '/wills');
+            } else if (tab === 'vault') {
+              navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
+            } else if (tab === 'assets') {
+              navigateTo(hasPreviewParam ? '/assets?preview=true' : '/assets');
+            } else if (tab === 'dms') {
+              navigateTo(hasPreviewParam ? '/dms?preview=true' : '/dms');
+            }
+          }}
+        >
+          {isPeopleRoute ? (
+            <TrusteeBeneficiaryPage lang={lang} isDevPreview={hasPreviewParam}/>
+          ) : isWillRoute ? (
+            <WillUploadPage key={hasPreviewParam ? 'preview-wills' : 'live-wills'} lang={lang} isDevPreview={hasPreviewParam} />
+          ) : isAssetRoute ? (
+            <AssetManagementPage
+              key={hasPreviewParam ? 'preview-assets' : 'live-assets'}
+              t={translations[lang]} lang={lang}
+              isDevPreview={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : isDmsRoute ? (
+            <DMSOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : (
+            <VaultOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          )}
+        </AppShell>
+      </div>
+    );
+  }
 
   return (
     <div className="lv-app-root">
@@ -176,16 +242,10 @@ export default function App() {
         <RegisterPageHenedo onNavigateToLogin={() => navigateTo('/login')} />
       ) : isLoginRoute ? (
         <LoginPage onNavigateToRegister={() => navigateTo('/register')} />
-      ) : isTrusteeBeneficiaryRoute ? (
-        <TrusteeBeneficiaryPage
-          onNavigateToLogin={() => navigateTo('/login')}
-          onNavigateToRegister={() => navigateTo('/register')}
-        />
       ) : (
         <NotFoundFallback
           onNavigateToRegister={() => navigateTo('/register')}
           onNavigateToLogin={() => navigateTo('/login')}
-          onNavigateToTrusteeBeneficiary={() => navigateTo('/trustee-beneficiary')}
         />
       )}
     </div>
