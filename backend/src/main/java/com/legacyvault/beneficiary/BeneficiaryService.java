@@ -14,6 +14,7 @@ import com.legacyvault.common.api.PageEnvelope;
 import com.legacyvault.common.audit.AuditService;
 import com.legacyvault.common.error.BusinessException;
 import com.legacyvault.common.error.ErrorCode;
+import com.legacyvault.common.i18n.MessageService;
 import com.legacyvault.common.security.OwnerContextService;
 import com.legacyvault.user.UserAccount;
 import com.legacyvault.vault.OwnerVaultService;
@@ -27,14 +28,17 @@ public class BeneficiaryService {
 	private final OwnerContextService owners;
 	private final IdentityNumberCipher identityCipher;
 	private final AuditService audit;
+	private final MessageService messages;
 
 	public BeneficiaryService(BeneficiaryRepository beneficiaries, OwnerVaultService ownerVaults,
-			OwnerContextService owners, IdentityNumberCipher identityCipher, AuditService audit) {
+			OwnerContextService owners, IdentityNumberCipher identityCipher, AuditService audit,
+			MessageService messages) {
 		this.beneficiaries = beneficiaries;
 		this.ownerVaults = ownerVaults;
 		this.owners = owners;
 		this.identityCipher = identityCipher;
 		this.audit = audit;
+		this.messages = messages;
 	}
 
 	@Transactional
@@ -75,6 +79,18 @@ public class BeneficiaryService {
 		audit.record(owner.getId(), vault.getId(), "BENEFICIARY_UPDATED", "BENEFICIARY", beneficiary.getId(), "USER",
 				Map.of("fieldsChanged", fields(request.identityNumber() != null), "stepId", "ST-05"));
 		return BeneficiaryDtos.Response.from(beneficiary);
+	}
+
+	@Transactional(readOnly = true)
+	public BeneficiaryDtos.ConfigurationCheck configurationCheck(UUID vaultId) {
+		UserAccount owner = owners.requireOwner();
+		Vault vault = ownerVaults.requireOwnedVault(vaultId, owner);
+		long count = beneficiaries.countByVault_Id(vault.getId());
+		List<BeneficiaryDtos.ConfigurationIssue> issues = count == 0
+				? List.of(new BeneficiaryDtos.ConfigurationIssue("BENEFICIARY_REQUIRED", "config.beneficiaryRequired",
+						messages.get("config.beneficiaryRequired")))
+				: List.of();
+		return new BeneficiaryDtos.ConfigurationCheck(vault.getPublicId(), count > 0, count, issues);
 	}
 	private byte[] encryptIfPresent(String identityNumber) {
 		String value = clean(identityNumber);

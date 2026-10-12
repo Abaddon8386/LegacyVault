@@ -3,6 +3,7 @@ package com.legacyvault.beneficiary;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.constraints.Email;
@@ -30,6 +31,13 @@ public final class BeneficiaryDtos {
 					beneficiary.getRelationship(), beneficiary.getDateOfBirth(), beneficiary.getPhone(), beneficiary.getEmail(),
 					beneficiary.hasIdentityNumber(), beneficiary.hasAccount(), beneficiary.getStatus(),
 					utc(beneficiary.getCreatedAt()), utc(beneficiary.getUpdatedAt()));
+		}
+	}
+
+	public record ConfigurationIssue(String code, String messageKey, String message) { }
+	public record ConfigurationCheck(UUID vaultId, boolean ready, long beneficiaryCount, List<ConfigurationIssue> issues) {
+		public ConfigurationCheck {
+			issues = List.copyOf(issues);
 		}
 	}
 
