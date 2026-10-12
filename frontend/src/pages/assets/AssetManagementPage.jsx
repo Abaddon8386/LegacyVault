@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   X,
 } from 'lucide-react'
-import { assetService, isAssetPreview } from '../../services/assetService'
+import { assetService } from '../../services/assetService'
 import { Button } from '../../components/common/Button'
 import { Modal } from '../../components/common/Modal'
 import { AssetListTable } from '../../components/assets/AssetListTable'
@@ -27,7 +27,6 @@ const LEGAL_DISMISSED_KEY = 'legacyvault_legal_notice_dismissed'
  */
 export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
   isDevPreview = false, onNavigateToLogin, onRefreshTrigger = 0 }) {
-  const preview = isAssetPreview({ isDevPreview })
   const [query, setQuery] = useState({ page: 0, size: 10, sort: 'createdAt,desc' })
   const [totalElements, setTotalElements] = useState(0)
   const [retry, setRetry] = useState(0)
@@ -119,7 +118,7 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
       setSearchQuery('')
       setSelectedAssetType('ALL')
       setQuery(prev => ({ ...prev, page: 0, sort: 'createdAt,desc' }))
-      showToast(preview ? 'previewSaved' : 'addSuccess')
+      showToast('addSuccess')
     } catch (error) {
       if (aliveRef.current) showToast(error.code || 'saveError', 'error')
     } finally {
@@ -163,7 +162,6 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
         </div>
       )}
 
-      {preview && <p className="lv-preview-notice" role="note">{t.assets.previewNotice}</p>}
       {/* Page Header */}
       <div className="lv-page-header">
         <div className="lv-page-header__left">

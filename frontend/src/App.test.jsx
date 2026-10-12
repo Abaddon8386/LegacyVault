@@ -14,7 +14,8 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); window.history.repla
 it('keeps Assets, Vault and DMS connected through the shared shell', async () => {
   window.history.replaceState({}, '', '/assets?preview=true')
   render(<App />)
-  expect(await screen.findByText(/Bản xem trước dùng dữ liệu mẫu/)).toBeInTheDocument()
+  expect(await screen.findByText('Chưa có tài sản nào trong kho')).toBeInTheDocument()
+  expect(screen.queryByText(/Bản xem trước|Preview with sample data/)).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Kho di sản số (Vault)' }))
   expect(screen.getByText('Vault route test')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Giám sát hoạt động (DMS)' }))

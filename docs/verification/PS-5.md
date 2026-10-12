@@ -21,9 +21,11 @@ Không đưa nhánh foundation vào PR này. Adapter có thể cần điều ch�
 | Pagination | GET đọc envelope `content/page/size/totalElements/totalPages`; page/size/sort gửi về server; search/filter/thống kê ghi rõ chỉ áp dụng trên trang hiện tại |
 | VI/EN | Form, validation, thông báo và ngày tháng đổi ngôn ngữ; không refetch chỉ vì đổi ngôn ngữ, không xóa dữ liệu form |
 | Payload | Giữ nguyên whitespace người dùng nhập; không có trong response/state danh sách/storage/log; unmount form sau thành công/hủy; giữ form nếu request thất bại |
-| Preview/production | Chỉ DEV + `?preview=true`; mẫu chỉ lưu metadata trong memory; thông báo rõ chưa lưu kho thật; production chặn route khi chưa có phiên đăng nhập tích hợp |
+| Preview/production | Chỉ DEV + `?preview=true`; mẫu chỉ lưu metadata trong memory; giao diện trình bày không hiển thị banner/nhãn kỹ thuật; production chặn route khi chưa có phiên đăng nhập tích hợp |
 | Hồi quy | Login vẫn mở được; Vault/DMS/Assets dùng AppShell chung; test điều hướng và guard production |
 | Trợ năng | Form focus vào input, trap Tab, Escape/hủy, trả focus về nút mở; khóa hủy/đóng khi POST đang chạy; sort qua bàn phím; nút icon có aria-label |
+
+Theo yêu cầu người dùng ngày 12/10/2026, gỡ banner bản xem trước và thông báo mô phỏng khỏi UI dùng trình bày cho giảng viên/khách hàng. Thông báo thêm tài sản dùng câu trung tính "Đã thêm tài sản vào danh sách"; giới hạn dữ liệu mẫu được ghi trong tài liệu bàn giao.
 
 ## Kết quả xác minh
 

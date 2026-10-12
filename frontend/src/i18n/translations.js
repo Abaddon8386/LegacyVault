@@ -16,7 +16,6 @@ export const translations = {
     },
     assets: {
       title: 'Danh sách Tài sản',
-      previewNotice: 'Bản xem trước dùng dữ liệu mẫu. Các thay đổi chưa được lưu vào kho thật.',
       pageScope: 'Tìm kiếm, bộ lọc và thống kê áp dụng cho trang hiện tại.',
       signIn: 'Đăng nhập lại',
       subtitle: 'Khai báo các tài sản thuộc kho di sản cá nhân để chuẩn bị phân định thừa kế.',
@@ -95,7 +94,6 @@ export const translations = {
         payloadRequired: 'Vui lòng nhập nội dung bí mật.',
       },
       alerts: {
-        previewSaved: 'Đã thêm tài sản vào bản xem trước. Chưa lưu vào kho thật.',
         BACKEND_NOT_READY: 'Dịch vụ tài sản chưa sẵn sàng. Vui lòng thử lại sau.',
         UNAUTHENTICATED: 'Phiên làm việc đã hết hạn hoặc chưa đăng nhập.',
         ACCESS_DENIED: 'Bạn không có quyền truy cập tài sản trong kho này.',
@@ -104,7 +102,7 @@ export const translations = {
         VALIDATION_FAILED: 'Thông tin tài sản chưa hợp lệ. Vui lòng kiểm tra lại.',
         NETWORK_ERROR: 'Không thể kết nối máy chủ. Vui lòng kiểm tra mạng và thử lại.',
         SERVER_ERROR: 'Máy chủ gặp sự cố. Vui lòng thử lại sau.',
-        addSuccess: 'Tài sản đã được thêm thành công vào kho di sản.',
+        addSuccess: 'Đã thêm tài sản vào danh sách.',
         loadError: 'Không thể tải danh sách tài sản. Vui lòng thử lại sau.',
         saveError: 'Đã xảy ra lỗi khi lưu tài sản. Vui lòng kiểm tra lại.',
         retryBtn: 'Thử lại',
@@ -128,7 +126,6 @@ export const translations = {
     },
     assets: {
       title: 'Asset Inventory',
-      previewNotice: 'Preview with sample data. Changes are not saved to your real vault.',
       pageScope: 'Search, filters and summaries apply to the current page.',
       signIn: 'Sign in again',
       subtitle: 'Record and organize assets within your vault to prepare for succession planning.',
@@ -207,7 +204,6 @@ export const translations = {
         payloadRequired: 'Confidential payload is required.',
       },
       alerts: {
-        previewSaved: 'Asset added to preview. It has not been saved to your real vault.',
         BACKEND_NOT_READY: 'The asset service is not ready. Please try again later.',
         UNAUTHENTICATED: 'Your session has expired or you are not signed in.',
         ACCESS_DENIED: 'You do not have access to assets in this vault.',
@@ -216,7 +212,7 @@ export const translations = {
         VALIDATION_FAILED: 'Asset information is invalid. Please check the form.',
         NETWORK_ERROR: 'Unable to reach the server. Check your connection and retry.',
         SERVER_ERROR: 'The server encountered a problem. Please try again later.',
-        addSuccess: 'Asset successfully recorded into your vault.',
+        addSuccess: 'Asset added to the list.',
         loadError: 'Failed to retrieve asset inventory. Please try again.',
         saveError: 'An error occurred while saving the asset. Please try again.',
         retryBtn: 'Retry',
