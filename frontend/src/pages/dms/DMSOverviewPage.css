@@ -1,89 +1,38 @@
 /* ==========================================================================
    LegacyVault — Dead Man's Switch (DMS) Overview Page Styles
-   Design Style: Henedo — Timeless Digital Sanctuary & Motion Polish
+   Design Style: Henedo — Timeless Digital Sanctuary & Visible Motion
    ========================================================================== */
 
 .lv-dms-page {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 6px 0 40px;
+  padding: 4px 0 40px;
 }
 
 /* --------------------------------------------------------------------------
-   Page Entrance & Stagger Motion (Henedo Premium)
+   Page Entrance & Visible Stagger Motion (Henedo Premium)
    -------------------------------------------------------------------------- */
 @keyframes lvDmsFadeSlideUp {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
-  to {
+  40% {
+    opacity: 0.6;
+  }
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 .lv-dms-stagger {
-  animation: lvDmsFadeSlideUp 420ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--stagger, 0) * 60ms) backwards;
+  animation: lvDmsFadeSlideUp 580ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--stagger, 0) * 85ms) both;
   will-change: transform, opacity;
-}
-
-/* --------------------------------------------------------------------------
-   DEV Toolbar (Môi trường phát triển với ?preview=true)
-   -------------------------------------------------------------------------- */
-.lv-dms-dev-toolbar {
-  background: rgba(22, 70, 57, 0.04);
-  border: 1px dashed rgba(22, 70, 57, 0.22);
-  border-radius: 12px;
-  padding: 10px 16px;
-  transition: border-color 0.2s ease;
-}
-
-.lv-dms-dev-toolbar-inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.lv-dms-dev-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lv-forest-deep, #164639);
-}
-
-.lv-dms-dev-icon {
-  font-size: 14px;
-  color: var(--lv-sand-gold, #c5a059);
-}
-
-.lv-dms-dev-select {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--lv-text-primary, #1f2421);
-  background: #ffffff;
-  border: 1px solid var(--lv-border-subtle, #eae5dc);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.lv-dms-dev-select:hover {
-  border-color: var(--lv-sand-gold, #c5a059);
-}
-
-.lv-dms-dev-subnote {
-  font-size: 12px;
-  color: var(--lv-text-muted, #6b726b);
-  margin-left: auto;
 }
 
 /* --------------------------------------------------------------------------
@@ -128,7 +77,7 @@
 .lv-dms-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .lv-dms-header-top-row {
@@ -195,13 +144,14 @@
   font-weight: 600;
   color: #8b6823;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lv-dms-info-trigger:hover {
   background: rgba(197, 160, 89, 0.16);
   border-color: rgba(197, 160, 89, 0.6);
-  transform: translateY(-1px);
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 8px rgba(197, 160, 89, 0.15);
 }
 
 .lv-dms-info-btn-text {
@@ -212,15 +162,15 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: 320px;
+  width: 330px;
   max-width: calc(100vw - 32px);
   background: #ffffff;
-  border: 1px solid rgba(197, 160, 89, 0.35);
+  border: 1px solid rgba(197, 160, 89, 0.4);
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 10px 30px rgba(22, 70, 57, 0.12), 0 2px 8px rgba(197, 160, 89, 0.15);
   z-index: 50;
-  animation: lvDmsFadeSlideUp 0.22s ease-out;
+  animation: lvDmsFadeSlideUp 0.25s ease-out;
 }
 
 .lv-dms-info-popover-header {
@@ -373,8 +323,9 @@
 
 .lv-dms-empty-cta:hover {
   background: #11362c;
-  transform: translateY(-1.5px) scale(1.01);
-  box-shadow: 0 4px 14px rgba(22, 70, 57, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(22, 70, 57, 0.24);
+  border-color: rgba(197, 160, 89, 0.6);
 }
 
 /* --------------------------------------------------------------------------
@@ -397,11 +348,11 @@
   flex-direction: column;
   gap: 20px;
   overflow: hidden;
-  transition: box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lv-dms-card:hover {
-  border-color: rgba(197, 160, 89, 0.28);
+  border-color: rgba(197, 160, 89, 0.32);
   box-shadow: 0 8px 28px rgba(22, 70, 57, 0.06);
 }
 
@@ -470,28 +421,33 @@
 
 /* Status Breathing Pulse Dot */
 .lv-dms-status-pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #1d724f;
   display: inline-block;
-  animation: lvDmsPulseDot 2.4s ease-in-out infinite;
+  position: relative;
+  animation: lvDmsPulseDot 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes lvDmsPulseDot {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(29, 114, 79, 0.45);
-    transform: scale(1);
+  0% {
+    box-shadow: 0 0 0 0 rgba(29, 114, 79, 0.7);
+    transform: scale(0.98);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(29, 114, 79, 0);
-    transform: scale(1.08);
+    box-shadow: 0 0 0 7px rgba(29, 114, 79, 0);
+    transform: scale(1.12);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(29, 114, 79, 0);
+    transform: scale(0.98);
   }
 }
 
 .lv-dms-status-triggered-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #c53030;
   display: inline-block;
@@ -511,7 +467,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Read-Only Summary Metric Cards (Hover nâng 2-3px, ánh Sand Gold nhẹ)
+   Read-Only Summary Metric Cards (Hover nâng 3px, viền Sand Gold nổi bật)
    -------------------------------------------------------------------------- */
 .lv-dms-metrics-grid {
   display: grid;
@@ -520,23 +476,42 @@
 }
 
 .lv-dms-metric-item {
+  position: relative;
   background: var(--lv-surface-subtle, #fcfbf8);
   border: 1px solid var(--lv-border-subtle, #eae5dc);
-  border-radius: 12px;
-  padding: 16px 18px;
+  border-radius: 14px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: default;
 }
 
 .lv-dms-metric-item:hover {
-  transform: translateY(-2.5px);
-  border-color: rgba(197, 160, 89, 0.36);
-  box-shadow: 0 6px 18px rgba(22, 70, 57, 0.05), 0 2px 6px rgba(197, 160, 89, 0.1);
+  transform: translateY(-3px);
+  border-color: rgba(197, 160, 89, 0.55);
+  box-shadow: 0 10px 24px rgba(22, 70, 57, 0.08), 0 2px 8px rgba(197, 160, 89, 0.16);
+}
+
+/* Top accent hairline on metric hover */
+.lv-dms-metric-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c5a059, transparent);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  border-radius: 14px 14px 0 0;
+}
+
+.lv-dms-metric-item:hover::after {
+  opacity: 1;
 }
 
 .lv-dms-metric-label {
@@ -572,7 +547,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Cycle Timeline / Progress Bar
+   Cycle Timeline / Progress Bar (Animate từ 0 đến phần trăm thực)
    -------------------------------------------------------------------------- */
 .lv-dms-cycle-timeline {
   display: flex;
@@ -614,7 +589,8 @@
   height: 100%;
   background: linear-gradient(90deg, #164639 0%, #c5a059 100%);
   border-radius: 9999px;
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 850ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: width;
 }
 
 .lv-dms-cycle-timeline-bounds {
@@ -630,8 +606,16 @@
    -------------------------------------------------------------------------- */
 .lv-dms-action-card {
   background: linear-gradient(135deg, rgba(22, 70, 57, 0.03) 0%, rgba(197, 160, 89, 0.05) 100%), #ffffff;
-  border: 1px solid rgba(197, 160, 89, 0.28);
+  border: 1px solid rgba(197, 160, 89, 0.32);
   padding: 22px 28px;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lv-dms-action-card:hover {
+  border-color: rgba(197, 160, 89, 0.55);
+  box-shadow: 0 10px 30px rgba(22, 70, 57, 0.08);
 }
 
 .lv-dms-action-card-inner {
@@ -658,11 +642,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.25s ease;
+  transition: transform 0.28s ease;
 }
 
 .lv-dms-action-card:hover .lv-dms-action-icon-wrap {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
 .lv-dms-action-title {
@@ -689,24 +673,29 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 26px;
-  background: linear-gradient(135deg, #164639 0%, #1d5646 100%);
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #164639 0%, #1e5a4a 100%);
   color: #ffffff;
-  border: 1px solid rgba(197, 160, 89, 0.35);
+  border: 1px solid rgba(197, 160, 89, 0.4);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(22, 70, 57, 0.18);
+  box-shadow: 0 4px 16px rgba(22, 70, 57, 0.2);
   white-space: nowrap;
 }
 
 .lv-dms-checkin-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #11362c 0%, #164639 100%);
-  border-color: rgba(197, 160, 89, 0.6);
-  transform: translateY(-1.5px) scale(1.015);
-  box-shadow: 0 6px 20px rgba(22, 70, 57, 0.24);
+  border-color: rgba(197, 160, 89, 0.75);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(22, 70, 57, 0.28);
+}
+
+.lv-dms-checkin-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 2px 8px rgba(22, 70, 57, 0.2);
 }
 
 .lv-dms-checkin-btn:disabled,
@@ -800,20 +789,22 @@
   background: #f7f5f0;
   border: 1px solid var(--lv-border-subtle, #eae5dc);
   color: var(--lv-text-primary, #1f2421);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lv-dms-preset-pill:hover {
   border-color: var(--lv-sand-gold, #c5a059);
-  background: rgba(197, 160, 89, 0.1);
-  transform: translateY(-1px);
+  background: rgba(197, 160, 89, 0.14);
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 8px rgba(197, 160, 89, 0.12);
 }
 
 .lv-dms-preset-pill.is-active {
   background: var(--lv-forest-deep, #164639);
   color: #ffffff;
-  border-color: var(--lv-forest-deep, #164639);
-  box-shadow: 0 2px 8px rgba(22, 70, 57, 0.2);
+  border-color: var(--lv-sand-gold, #c5a059);
+  box-shadow: 0 4px 12px rgba(22, 70, 57, 0.22);
+  transform: translateY(-1px);
 }
 
 /* Custom Input Cluster */
@@ -862,7 +853,7 @@
 
 .lv-dms-input:focus {
   border-color: var(--lv-sand-gold, #c5a059);
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.22), 0 2px 8px rgba(22, 70, 57, 0.05);
 }
 
 .lv-dms-input.is-invalid {
@@ -902,7 +893,7 @@
   padding: 9px 22px;
   background: var(--lv-forest-deep, #164639);
   color: #ffffff;
-  border: 1px solid rgba(197, 160, 89, 0.3);
+  border: 1px solid rgba(197, 160, 89, 0.35);
   border-radius: 8px;
   font-size: 13.5px;
   font-weight: 600;
@@ -913,9 +904,14 @@
 
 .lv-dms-submit-btn:hover:not(:disabled) {
   background: #11362c;
-  border-color: rgba(197, 160, 89, 0.6);
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 4px 12px rgba(22, 70, 57, 0.22);
+  border-color: rgba(197, 160, 89, 0.65);
+  transform: translateY(-1.5px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(22, 70, 57, 0.24);
+}
+
+.lv-dms-submit-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 2px 6px rgba(22, 70, 57, 0.15);
 }
 
 .lv-dms-submit-btn:disabled {
@@ -990,7 +986,6 @@
 .lv-dms-reset-btn:focus-visible,
 .lv-dms-info-trigger:focus-visible,
 .lv-dms-info-popover-close:focus-visible,
-.lv-dms-dev-select:focus-visible,
 .lv-dms-empty-cta:focus-visible {
   outline: 2px solid var(--lv-sand-gold, #c5a059);
   outline-offset: 2px;
@@ -1060,7 +1055,7 @@
 
 @media (max-width: 540px) {
   .lv-dms-page {
-    gap: 18px;
+    gap: 16px;
     padding: 0 0 32px;
   }
 

@@ -3,7 +3,6 @@ import {
   fetchDmsConfig,
   saveDmsConfig,
   checkInDms,
-  DMS_SCENARIOS,
   INTERVAL_PRESETS,
   DEFAULT_INTERVAL_DAYS,
   formatDmsDate,
@@ -17,14 +16,14 @@ import './DMSOverviewPage.css';
 
 export default function DMSOverviewPage({
   lang = 'vi',
-  showDevToolbar = false,
+  isDevPreview = false,
+  showDevToolbar = false, // Kept for prop compatibility, but no toolbar is ever rendered
   onNavigateToLogin,
   onRefreshTrigger,
 }) {
   const [dmsData, setDmsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedScenario, setSelectedScenario] = useState('monitoring');
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Form states
@@ -40,14 +39,19 @@ export default function DMSOverviewPage({
   const [checkInNotice, setCheckInNotice] = useState('');
   const [checkInError, setCheckInError] = useState('');
 
-  // Info popover state (subtle replacement for giant technical warning banner)
+  // Info popover state
   const [showInfoPopover, setShowInfoPopover] = useState(false);
 
   // Data fetching
   useEffect(() => {
     let ignore = false;
-    const isDevPreviewActive = Boolean(import.meta.env.DEV && showDevToolbar);
-    const scenario = isDevPreviewActive ? selectedScenario : undefined;
+
+    // Check if DEV Preview is active via URL params or prop
+    // Strictly gated: scenario only takes effect when import.meta.env.DEV is true AND preview=true is present
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasPreview = searchParams.get('preview') === 'true';
+    const isDevPreviewActive = Boolean(import.meta.env.DEV && (isDevPreview || showDevToolbar || hasPreview));
+    const scenario = isDevPreviewActive ? (searchParams.get('scenario') || 'monitoring') : undefined;
 
     fetchDmsConfig({ scenario, isDevPreview: isDevPreviewActive, lang })
       .then((data) => {
@@ -71,24 +75,13 @@ export default function DMSOverviewPage({
     return () => {
       ignore = true;
     };
-  }, [showDevToolbar, selectedScenario, lang, onRefreshTrigger, refreshKey]);
+  }, [isDevPreview, showDevToolbar, lang, onRefreshTrigger, refreshKey]);
 
   const handleManualRetry = useCallback(() => {
     setLoading(true);
     setError(null);
     setRefreshKey((k) => k + 1);
   }, []);
-
-  const handleScenarioChange = (e) => {
-    const sc = e.target.value;
-    setSelectedScenario(sc);
-    setLoading(true);
-    setSaveSuccess('');
-    setSaveError('');
-    setCheckInNotice('');
-    setCheckInError('');
-    setIsConfiguringNew(false);
-  };
 
   const handlePresetSelect = (days) => {
     setIntervalInput(days);
@@ -118,8 +111,10 @@ export default function DMSOverviewPage({
     setSaveError('');
     setSaveSuccess('');
 
-    const isDevPreviewActive = Boolean(import.meta.env.DEV && showDevToolbar);
-    const scenario = isDevPreviewActive ? selectedScenario : undefined;
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasPreview = searchParams.get('preview') === 'true';
+    const isDevPreviewActive = Boolean(import.meta.env.DEV && (isDevPreview || showDevToolbar || hasPreview));
+    const scenario = isDevPreviewActive ? (searchParams.get('scenario') || 'monitoring') : undefined;
 
     try {
       const updated = await saveDmsConfig(
@@ -152,8 +147,10 @@ export default function DMSOverviewPage({
     setCheckInNotice('');
     setCheckInError('');
 
-    const isDevPreviewActive = Boolean(import.meta.env.DEV && showDevToolbar);
-    const scenario = isDevPreviewActive ? selectedScenario : undefined;
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasPreview = searchParams.get('preview') === 'true';
+    const isDevPreviewActive = Boolean(import.meta.env.DEV && (isDevPreview || showDevToolbar || hasPreview));
+    const scenario = isDevPreviewActive ? (searchParams.get('scenario') || 'monitoring') : undefined;
 
     try {
       const result = await checkInDms({
@@ -199,6 +196,18 @@ export default function DMSOverviewPage({
     return Math.min(100, Math.max(0, Math.round(((refTime - start) / (end - start)) * 100)));
   }, [dmsData]);
 
+  // Animate progress bar from 0 to real percentage upon data load
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+
+  useEffect(() => {
+    if (cycleProgress !== null) {
+      const timer = setTimeout(() => {
+        setAnimatedProgress(cycleProgress);
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [cycleProgress]);
+
   const content = {
     vi: {
       eyebrow: 'GIÁM SÁT HOẠT ĐỘNG ĐỊNH KỲ',
@@ -208,7 +217,7 @@ export default function DMSOverviewPage({
       infoBtnLabel: 'Thông tin bảo vệ di sản',
       infoPopoverTitle: 'Bảo vệ kho di sản số',
       infoPopoverText:
-        'Việc trễ hạn kiểm tra hoạt động không đồng nghĩa với việc xác nhận chủ sở hữu đã qua đời. Kho di sản của bạn luôn được bảo vệ nghiêm ngặt và tuyệt đối không tự động mở khóa, không giải mã hay bàn giao tài sản khi quá hạn.',
+        'Quá hạn xác nhận hoạt động không đồng nghĩa với xác nhận qua đời và không tự động mở khóa kho di sản. Kho di sản vẫn được bảo vệ theo đúng quy tắc ủy quyền.',
       statusCardTitle: 'Trạng thái giám sát hiện hành',
       statusCardSub: 'Thông tin chu kỳ và các mốc thời gian kiểm tra sự sống',
       metricStatus: 'Trạng thái theo dõi',
@@ -226,10 +235,9 @@ export default function DMSOverviewPage({
       checkInBtn: 'Xác nhận còn hoạt động',
       checkingInBtn: 'Đang xác nhận…',
       checkInDisabledTriggered: 'Chức năng tạm khóa trong thời gian kích hoạt quá hạn.',
-      checkInReadySub: 'Nhấp để xác nhận bạn vẫn đang hoạt động bình thường.',
       triggeredAlertTitle: 'Thông báo: Đã quá hạn xác nhận hoạt động',
       triggeredAlertDesc:
-        'Đã quá hạn xác nhận hoạt động. Trạng thái này không đồng nghĩa với việc xác nhận chủ sở hữu đã qua đời. Kho di sản vẫn được bảo vệ.',
+        'Đã quá hạn xác nhận hoạt động. Quá hạn xác nhận hoạt động không đồng nghĩa với xác nhận qua đời và không tự động mở khóa kho di sản.',
       triggeredDeadlinePrefix: 'Thời hạn ân hạn:',
       configCardTitle: 'Cấu hình chu kỳ kiểm tra',
       configCardSub:
@@ -246,10 +254,8 @@ export default function DMSOverviewPage({
       emptyDesc:
         'Kho di sản chưa được thiết lập lịch kiểm tra hoạt động định kỳ. Hãy thiết lập chu kỳ để hệ thống bắt đầu theo dõi các mốc check-in của bạn.',
       emptyAction: 'Thiết lập chu kỳ ngay',
-      devToolbarLabel: 'Kịch bản kiểm thử giao diện:',
-      devToolbarNotice: 'Công cụ mô phỏng giao diện (?preview=true).',
       policyFootnote:
-        'Nguyên tắc bảo vệ di sản: Việc quá hạn kiểm tra không đồng nghĩa với xác nhận qua đời. Kho di sản luôn được niêm phong an toàn và không tự động mở khóa.',
+        'Quá hạn xác nhận hoạt động không đồng nghĩa với xác nhận qua đời và không tự động mở khóa kho di sản.',
     },
     en: {
       eyebrow: 'PERIODIC ACTIVITY MONITORING',
@@ -259,7 +265,7 @@ export default function DMSOverviewPage({
       infoBtnLabel: 'Heritage Protection Info',
       infoPopoverTitle: 'Heritage Vault Protection',
       infoPopoverText:
-        'Missing an activity check-in deadline does not confirm owner decease. Heritage vaults remain securely protected and are never automatically unlocked, decrypted, or transferred solely due to missed check-ins.',
+        'Check-in expiration does not signify owner decease and does not automatically unlock the heritage vault. The vault remains protected under configured authorization rules.',
       statusCardTitle: 'Current Vitality Status',
       statusCardSub: 'Monitoring schedule and countdown threshold parameters',
       metricStatus: 'Monitoring Status',
@@ -277,10 +283,9 @@ export default function DMSOverviewPage({
       checkInBtn: "Confirm Vitality (I'm active)",
       checkingInBtn: 'Confirming…',
       checkInDisabledTriggered: 'Temporarily disabled during overdue grace period.',
-      checkInReadySub: 'Click to confirm you are active and refresh the cycle timer.',
       triggeredAlertTitle: 'Notice: Vitality Check-in Overdue',
       triggeredAlertDesc:
-        'Vitality confirmation is overdue. This status does not signify owner decease. Your heritage vault remains securely protected.',
+        'Vitality confirmation is overdue. Check-in expiration does not signify owner decease and does not automatically unlock the heritage vault.',
       triggeredDeadlinePrefix: 'Grace period deadline:',
       configCardTitle: 'Configure Check-in Interval',
       configCardSub:
@@ -297,10 +302,8 @@ export default function DMSOverviewPage({
       emptyDesc:
         'Your heritage vault currently has no active check-in schedule. Configure an interval to begin tracking your scheduled check-ins.',
       emptyAction: 'Configure Interval Now',
-      devToolbarLabel: 'UI Test Scenario:',
-      devToolbarNotice: 'Development simulation utility (?preview=true).',
       policyFootnote:
-        'Heritage Protection Principle: Missed check-ins do not confirm decease. Heritage vaults remain securely sealed and are never automatically unlocked.',
+        'Check-in expiration does not signify owner decease and does not automatically unlock the heritage vault.',
     },
   };
 
@@ -340,31 +343,6 @@ export default function DMSOverviewPage({
 
   return (
     <div className="lv-dms-page">
-      {/* Dev Simulation Toolbar — Strictly gated for DEV environment with ?preview=true */}
-      {Boolean(import.meta.env.DEV && showDevToolbar) && (
-        <aside className="lv-dms-dev-toolbar lv-dms-stagger" style={{ '--stagger': 0 }} aria-label="Bộ điều khiển kịch bản thử nghiệm">
-          <div className="lv-dms-dev-toolbar-inner">
-            <label htmlFor="dms-scenario-select" className="lv-dms-dev-label">
-              <span className="lv-dms-dev-icon" aria-hidden="true">⚙</span>
-              <span>{t.devToolbarLabel}</span>
-            </label>
-            <select
-              id="dms-scenario-select"
-              className="lv-dms-dev-select"
-              value={selectedScenario}
-              onChange={handleScenarioChange}
-            >
-              {DMS_SCENARIOS.map((sc) => (
-                <option key={sc.id} value={sc.id}>
-                  {lang === 'vi' ? sc.labelVi : sc.labelEn}
-                </option>
-              ))}
-            </select>
-            <span className="lv-dms-dev-subnote">{t.devToolbarNotice}</span>
-          </div>
-        </aside>
-      )}
-
       {/* Toast / Action Notice */}
       {checkInNotice && (
         <div className="lv-dms-toast-notice lv-dms-stagger" style={{ '--stagger': 0 }} role="status" aria-live="polite">
@@ -381,7 +359,7 @@ export default function DMSOverviewPage({
       )}
 
       {/* Page Header */}
-      <header className="lv-dms-header lv-dms-stagger" style={{ '--stagger': 1 }}>
+      <header className="lv-dms-header lv-dms-stagger" style={{ '--stagger': 0 }}>
         <div className="lv-dms-header-top-row">
           <div className="lv-dms-header-titles">
             <span className="lv-dms-eyebrow">{t.eyebrow}</span>
@@ -432,7 +410,7 @@ export default function DMSOverviewPage({
 
       {/* TRIGGERED / GRACE PERIOD Alert Banner */}
       {isTriggered && (
-        <section className="lv-dms-triggered-banner lv-dms-stagger" style={{ '--stagger': 2 }} role="alert" aria-live="polite">
+        <section className="lv-dms-triggered-banner lv-dms-stagger" style={{ '--stagger': 1 }} role="alert" aria-live="polite">
           <div className="lv-dms-triggered-icon" aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
@@ -454,7 +432,7 @@ export default function DMSOverviewPage({
 
       {/* Main Content Area */}
       {isNotConfigured && !isConfiguringNew ? (
-        <section className="lv-dms-empty-panel lv-dms-stagger" style={{ '--stagger': 2 }} aria-label={t.emptyTitle}>
+        <section className="lv-dms-empty-panel lv-dms-stagger" style={{ '--stagger': 1 }} aria-label={t.emptyTitle}>
           <div className="lv-dms-empty-icon-wrap" aria-hidden="true">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="12" cy="12" r="10" />
@@ -478,7 +456,7 @@ export default function DMSOverviewPage({
         <div className="lv-dms-content-grid">
           {/* Status Overview Card */}
           {dmsData && (
-            <section className="lv-dms-card lv-dms-stagger" style={{ '--stagger': 2 }} aria-labelledby="dms-overview-heading">
+            <section className="lv-dms-card lv-dms-stagger" style={{ '--stagger': 1 }} aria-labelledby="dms-overview-heading">
               <div className="lv-dms-card-header">
                 <div className="lv-dms-card-heading-group">
                   <div className="lv-dms-card-icon-wrap" aria-hidden="true">
@@ -566,7 +544,7 @@ export default function DMSOverviewPage({
                 </div>
               </div>
 
-              {/* Cycle Timeline / Progress Indicator */}
+              {/* Cycle Timeline / Progress Indicator with visible animation */}
               {cycleProgress !== null && (
                 <div className="lv-dms-cycle-timeline">
                   <div className="lv-dms-cycle-timeline-header">
@@ -583,7 +561,7 @@ export default function DMSOverviewPage({
                   >
                     <div
                       className="lv-dms-cycle-progress-bar"
-                      style={{ width: `${cycleProgress}%` }}
+                      style={{ width: `${animatedProgress}%` }}
                     />
                   </div>
                   <div className="lv-dms-cycle-timeline-bounds">
@@ -595,9 +573,9 @@ export default function DMSOverviewPage({
             </section>
           )}
 
-          {/* Dedicated Vitality Action Card (Tách biệt rõ ràng với vùng thông tin chỉ đọc) */}
+          {/* Dedicated Vitality Action Card */}
           {dmsData && (
-            <section className="lv-dms-card lv-dms-action-card lv-dms-stagger" style={{ '--stagger': 3 }} aria-labelledby="dms-action-heading">
+            <section className="lv-dms-card lv-dms-action-card lv-dms-stagger" style={{ '--stagger': 2 }} aria-labelledby="dms-action-heading">
               <div className="lv-dms-action-card-inner">
                 <div className="lv-dms-action-text-col">
                   <div className="lv-dms-action-icon-wrap" aria-hidden="true">
@@ -633,7 +611,7 @@ export default function DMSOverviewPage({
           )}
 
           {/* Configure Interval Form Card */}
-          <section className="lv-dms-card lv-dms-config-card lv-dms-stagger" style={{ '--stagger': 4 }} aria-labelledby="dms-config-heading">
+          <section className="lv-dms-card lv-dms-config-card lv-dms-stagger" style={{ '--stagger': 3 }} aria-labelledby="dms-config-heading">
             <div className="lv-dms-card-header">
               <div className="lv-dms-card-heading-group">
                 <div className="lv-dms-card-icon-wrap" aria-hidden="true">
@@ -760,7 +738,7 @@ export default function DMSOverviewPage({
           </section>
 
           {/* Quiet, refined Policy Footer */}
-          <footer className="lv-dms-policy-footer lv-dms-stagger" style={{ '--stagger': 5 }}>
+          <footer className="lv-dms-policy-footer lv-dms-stagger" style={{ '--stagger': 4 }}>
             <p className="lv-dms-policy-text">
               <span className="lv-dms-policy-shield" aria-hidden="true">🛡️</span>{' '}
               {t.policyFootnote}

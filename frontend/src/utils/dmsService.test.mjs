@@ -369,3 +369,57 @@ test('DMS Live Adapter - checkIn: Success updates DMS state', async () => {
   assert.equal(result.lastCheckInAt, '2026-10-12T07:00:00Z');
   assert.equal(result.isSimulation, false);
 });
+
+// ============================================================================
+// URL PREVIEW GATING & REGRESSION TESTS
+// ============================================================================
+
+test('DMS URL Preview Gating - scenario without isDevPreview enforces live adapter', async () => {
+  let liveCalled = false;
+  const mockFetch = async () => {
+    liveCalled = true;
+    return {
+      ok: false,
+      status: 503,
+      headers: { get: () => 'text/html' },
+      text: async () => 'Unavailable',
+    };
+  };
+
+  await assert.rejects(
+    async () => {
+      // Caller passed scenario="triggered" but isDevPreview is false
+      await fetchDmsConfig({ vaultId: 'vlt-test', scenario: 'triggered', isDevPreview: false, fetchFn: mockFetch });
+    },
+    (err) => err.code === 'BACKEND_NOT_READY'
+  );
+  assert.equal(liveCalled, true);
+});
+
+test('DMS URL Preview Gating - PROD unconditionally ignores preview and scenario parameters', async () => {
+  let liveCalled = false;
+  const mockFetch = async () => {
+    liveCalled = true;
+    return {
+      ok: false,
+      status: 503,
+      headers: { get: () => 'text/html' },
+      text: async () => 'Unavailable',
+    };
+  };
+
+  await assert.rejects(
+    async () => {
+      // In production, isDevPreview: true and scenario: "monitoring" MUST call live adapter
+      await fetchDmsConfig({
+        vaultId: 'vlt-test',
+        scenario: 'monitoring',
+        isDevPreview: true,
+        testEnv: { PROD: true },
+        fetchFn: mockFetch,
+      });
+    },
+    (err) => err.code === 'BACKEND_NOT_READY'
+  );
+  assert.equal(liveCalled, true);
+});
