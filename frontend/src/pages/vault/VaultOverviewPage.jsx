@@ -12,8 +12,8 @@ import CreateVaultModal from '../../components/vault/CreateVaultModal.jsx';
 import LivingHeritageWave from '../../components/vault/LivingHeritageWave.jsx';
 import './VaultOverviewPage.css';
 
-const formatVaultId = (rawId) => {
-  if (!rawId) return '#VLT-0001';
+const formatVaultId = (rawId, lang = 'vi') => {
+  if (!rawId) return lang === 'en' ? 'Unassigned' : 'Chưa có mã';
   const cleanId = String(rawId).replace(/^vlt-/, '').toUpperCase();
   return cleanId.startsWith('#') ? cleanId : `#VLT-${cleanId}`;
 };
@@ -37,20 +37,24 @@ export default function VaultOverviewPage({
   const handleCopyId = useCallback(async (idToCopy) => {
     if (!idToCopy) return;
     try {
+      let copySuccess = false;
       if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(String(idToCopy));
+        copySuccess = true;
       } else if (typeof document !== 'undefined') {
         const textArea = document.createElement('textarea');
         textArea.value = String(idToCopy);
         document.body.appendChild(textArea);
         textArea.select();
-        document.execCommand('copy');
+        copySuccess = document.execCommand('copy');
         document.body.removeChild(textArea);
       }
-      setCopiedId(true);
-      setTimeout(() => setCopiedId(false), 2000);
+      if (copySuccess) {
+        setCopiedId(true);
+        setTimeout(() => setCopiedId(false), 2000);
+      }
     } catch {
-      // Graceful fallback
+      // Graceful fallback: do not indicate copied if failed
     }
   }, []);
 
@@ -112,9 +116,10 @@ export default function VaultOverviewPage({
 
   useEffect(() => {
     let ignore = false;
-    const scenario = (import.meta.env.DEV && showDevToolbar) ? selectedScenario : 'exists';
+    const isDevPreviewActive = Boolean(import.meta.env.DEV && showDevToolbar);
+    const scenario = isDevPreviewActive ? selectedScenario : undefined;
 
-    fetchVault({ scenario, isDevPreview: showDevToolbar, lang })
+    fetchVault({ scenario, isDevPreview: isDevPreviewActive, lang })
       .then((data) => {
         if (!ignore) {
           setVault(data);
@@ -141,14 +146,20 @@ export default function VaultOverviewPage({
   }, []);
 
   const handleCreateVaultSubmit = async (formData) => {
-    setIsModalOpen(false);
+    const isDevPreviewActive = Boolean(import.meta.env.DEV && showDevToolbar);
+    const scenario = isDevPreviewActive
+      ? (selectedScenario === 'network_error' || selectedScenario === 'forbidden' ? selectedScenario : 'success')
+      : undefined;
     const created = await createVault(formData, {
-      isDevPreview: showDevToolbar,
-      scenario: 'success',
+      isDevPreview: isDevPreviewActive,
+      scenario,
       lang,
     });
     setVault(created);
-    setSelectedScenario('exists');
+    if (isDevPreviewActive) {
+      setSelectedScenario('exists');
+    }
+    setIsModalOpen(false);
     setNotification(
       lang === 'en'
         ? 'Heritage vault initialized successfully (Status ACTIVE).'
@@ -304,41 +315,49 @@ export default function VaultOverviewPage({
                   <div className="lv-meta-id-wrap">
                     <span
                       className="lv-meta-value lv-mono"
-                      title={lang === 'en' ? `Full Vault ID: ${vault.id}` : `Mã kho đầy đủ: ${vault.id}`}
-                    >
-                      {formatVaultId(vault.id)}
-                    </span>
-                    <button
-                      type="button"
-                      className="lv-id-copy-btn"
-                      onClick={() => handleCopyId(vault.id)}
                       title={
-                        copiedId
-                          ? (lang === 'en' ? 'Copied full ID!' : 'Đã sao chép mã đầy đủ!')
-                          : (lang === 'en' ? `Copy full ID: ${vault.id}` : `Sao chép mã đầy đủ: ${vault.id}`)
+                        vault.id
+                          ? (lang === 'en' ? `Full Vault ID: ${vault.id}` : `Mã kho đầy đủ: ${vault.id}`)
+                          : (lang === 'en' ? 'No ID assigned yet' : 'Chưa được cấp mã định danh')
                       }
-                      aria-label={lang === 'en' ? 'Copy full Vault ID' : 'Sao chép mã kho đầy đủ'}
                     >
-                      {copiedId ? (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                      )}
-                    </button>
+                      {formatVaultId(vault.id, lang)}
+                    </span>
+                    {Boolean(vault.id) && (
+                      <button
+                        type="button"
+                        className="lv-id-copy-btn"
+                        onClick={() => handleCopyId(vault.id)}
+                        title={
+                          copiedId
+                            ? (lang === 'en' ? 'Copied full ID!' : 'Đã sao chép mã đầy đủ!')
+                            : (lang === 'en' ? `Copy full ID: ${vault.id}` : `Sao chép mã đầy đủ: ${vault.id}`)
+                        }
+                        aria-label={lang === 'en' ? 'Copy full Vault ID' : 'Sao chép mã kho đầy đủ'}
+                      >
+                        {copiedId ? (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="lv-meta-item">
                   <span className="lv-meta-label">{t.createdLabel}</span>
                   <span className="lv-meta-value">
-                    {new Date(vault.created_at || '2026-10-10T08:00:00Z').toLocaleDateString(
-                      lang === 'vi' ? 'vi-VN' : 'en-US',
-                      { year: 'numeric', month: 'long', day: 'numeric' }
-                    )}
+                    {vault.created_at
+                      ? new Date(vault.created_at).toLocaleDateString(
+                          lang === 'vi' ? 'vi-VN' : 'en-US',
+                          { year: 'numeric', month: 'long', day: 'numeric' }
+                        )
+                      : (lang === 'en' ? 'Not recorded' : 'Chưa ghi nhận')}
                   </span>
                 </div>
                 <div className="lv-meta-item">
@@ -350,7 +369,7 @@ export default function VaultOverviewPage({
                   <span className="lv-meta-value">
                     {vault.isSimulation
                       ? (lang === 'en' ? 'Simulation (Pending PS-74 API)' : 'Mô phỏng (Chờ API PS-74)')
-                      : (lang === 'en' ? 'Owner Access Policy (RBAC)' : 'Kiểm soát quyền chủ sở hữu (RBAC)')}
+                      : (lang === 'en' ? 'Pending Backend Verification' : 'Chờ xác thực Backend')}
                   </span>
                 </div>
               </div>

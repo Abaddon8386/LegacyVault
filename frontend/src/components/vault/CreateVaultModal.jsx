@@ -204,7 +204,7 @@ function CreateVaultModalDialog({
               <label htmlFor="lv-vault-name" className="lv-form-label">
                 {t.nameLabel} <span className="lv-req-star">*</span>
               </label>
-              <span className="lv-char-count">{form.vault_name.length}/200</span>
+              <span className="lv-char-count">{form.vault_name.length}/150</span>
             </div>
             <input
               ref={firstInputRef}
@@ -215,7 +215,7 @@ function CreateVaultModalDialog({
               value={form.vault_name}
               onChange={(e) => handleChange('vault_name', e.target.value)}
               disabled={isSubmitting}
-              maxLength={200}
+              maxLength={150}
               aria-invalid={errors.vault_name ? 'true' : 'false'}
               aria-describedby={errors.vault_name ? 'lv-vault-name-error' : undefined}
             />
