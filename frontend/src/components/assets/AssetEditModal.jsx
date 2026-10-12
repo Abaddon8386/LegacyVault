@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useModalFocus } from '../common/useModalFocus'
 import { Button } from '../common/Button'
 import { AlertCircle, Lock, KeyRound, FileText } from 'lucide-react'
 import './AssetFormModal.css'
@@ -21,34 +22,25 @@ export function AssetEditModal({
   onSubmit,
   t,
   isSubmitting = false,
+  errorKey,
 }) {
   const [name, setName] = useState(asset?.name || '')
   const [description, setDescription] = useState(asset?.description || '')
   const [payload, setPayload] = useState('')
   const [errors, setErrors] = useState({})
 
-  // Keep state synchronized if asset prop reference changes while modal is open
-  const [prevAssetId, setPrevAssetId] = useState(asset?.id)
-  if (asset && asset.id !== prevAssetId) {
-    setPrevAssetId(asset.id)
-    setName(asset.name || '')
-    setDescription(asset.description || '')
-    setPayload('')
-    setErrors({})
-  }
-
   function validate() {
     const errs = {}
     const trimmedName = name.trim()
 
     if (!trimmedName) {
-      errs.name = t.assets.validation.nameRequired
+      errs.name = 'nameRequired'
     } else if (trimmedName.length > 150) {
-      errs.name = t.assets.validation.nameMax
+      errs.name = 'nameMax'
     }
 
     if (description && description.length > 1000) {
-      errs.description = t.assets.validation.descMax
+      errs.description = 'descMax'
     }
 
     setErrors(errs)
@@ -57,27 +49,28 @@ export function AssetEditModal({
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!validate()) return
+    if (isSubmitting || !validate()) return
 
-    const patchData = {
-      name: name.trim(),
-      description: description.trim(),
-    }
-
-    // Omit payload if user left it blank
-    const trimmedPayload = payload.trim()
-    if (trimmedPayload.length > 0) {
-      patchData.payload = trimmedPayload
+    const patchData = {}
+    if (name.trim() !== asset.name) patchData.name = name.trim()
+    if (description.trim() !== (asset.description || '')) patchData.description = description.trim()
+    if (payload.trim()) patchData.payload = payload
+    if (!Object.keys(patchData).length) {
+      setErrors({ noChanges: true })
+      return
     }
 
     onSubmit(asset.id, patchData)
   }
 
   function handleResetAndClose() {
+    if (isSubmitting) return
     setPayload('')
     setErrors({})
     onClose()
   }
+
+  const dialogRef = useModalFocus(isOpen, handleResetAndClose, isSubmitting)
 
   if (!isOpen || !asset) return null
 
@@ -92,6 +85,8 @@ export function AssetEditModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
+        ref={dialogRef}
         aria-labelledby="asset-edit-modal-title"
       >
         <div className="lv-modal__header">
@@ -106,12 +101,15 @@ export function AssetEditModal({
             className="lv-modal__close-btn"
             onClick={handleResetAndClose}
             aria-label={t.assets.closeBtn}
+            disabled={isSubmitting}
           >
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="lv-modal__body" noValidate>
+          {errorKey && <p className="lv-form-error" role="alert">{t.assets.alerts[errorKey] || t.assets.alerts.editError}</p>}
+          {errors.noChanges && <p className="lv-form-error" role="alert">{t.assets.editModal.noChangesError}</p>}
           {/* Read-only Asset Type */}
           <div className="lv-form-group">
             <label className="lv-form-label">
@@ -152,13 +150,13 @@ export function AssetEditModal({
               value={name}
               onChange={(e) => {
                 setName(e.target.value)
-                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }))
+                if (errors.name || errors.noChanges) setErrors((prev) => ({ ...prev, name: undefined, noChanges: false }))
               }}
               disabled={isSubmitting}
             />
             {errors.name && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.name}
+                <AlertCircle size={14} /> {t.assets.validation[errors.name]}
               </p>
             )}
           </div>
@@ -174,7 +172,7 @@ export function AssetEditModal({
               className="lv-form-textarea"
               placeholder={t.assets.editModal.payloadPlaceholder}
               value={payload}
-              onChange={(e) => setPayload(e.target.value)}
+              onChange={(e) => { setPayload(e.target.value); if (errors.noChanges) setErrors(prev => ({ ...prev, noChanges: false })) }}
               disabled={isSubmitting}
             />
             <span className="lv-form-hint">
@@ -197,13 +195,13 @@ export function AssetEditModal({
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value)
-                if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }))
+                if (errors.description || errors.noChanges) setErrors((prev) => ({ ...prev, description: undefined, noChanges: false }))
               }}
               disabled={isSubmitting}
             />
             {errors.description && (
               <p className="lv-form-error" role="alert">
-                <AlertCircle size={14} /> {errors.description}
+                <AlertCircle size={14} /> {t.assets.validation[errors.description]}
               </p>
             )}
           </div>

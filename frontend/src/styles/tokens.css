@@ -17,7 +17,7 @@
 
   /* Gold & Warm Metallic Accents */
   --lv-accent-gold: #c5a059;          /* Sand Gold - Nút CTA chính, điểm nhấn danh dự */
-  --lv-accent-gold-hover: #b08d47;    /* Sand Gold Hover */
+  --lv-accent-gold-hover: #b58f47;    /* Sand Gold Hover */
   --lv-accent-gold-active: #a67f3a;   /* Sand Gold Active */
   --lv-accent-gold-subtle: #faf5eb;   /* Light warm gold cream tint (PS-5) */
   --lv-accent-gold-light: #d8c292;    /* Sand Gold Light - Chữ nhấn, viền mỏng */
@@ -154,8 +154,8 @@
   --lv-motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);   /* Gentle natural settle without harsh bounce */
 
   /* Composite Transitions */
-  --lv-transition-fast: 150ms ease;
-  --lv-transition-normal: 200ms ease;
+  --lv-transition-fast: var(--lv-motion-duration-fast) var(--lv-motion-ease-standard);
+  --lv-transition-normal: var(--lv-motion-duration-standard) var(--lv-motion-ease-smooth);
   --lv-transition-interactive: var(--lv-motion-duration-fast) var(--lv-motion-ease-standard);
   --lv-transition-card: var(--lv-motion-duration-standard) var(--lv-motion-ease-smooth);
   --lv-transition-modal: var(--lv-motion-duration-modal) var(--lv-motion-ease-smooth);

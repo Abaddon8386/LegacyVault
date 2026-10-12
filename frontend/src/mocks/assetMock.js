@@ -1,8 +1,8 @@
 /**
- * Mock data and storage simulation for Assets (PS-5 & PS-6 Contract Alignment).
+ * Memory-only DEV preview data for Assets (PS-5 Contract Alignment).
  * All mock data and simulation logic belong strictly in src/mocks/.
  *
- * NOTE: Fields strictly align with the current Asset API Contract (AssetResponse):
+ * NOTE: Fields strictly align with the proposed PS-74 Asset API contract (AssetResponse):
  * - id: UUID string
  * - vaultId: UUID string
  * - name: string (<= 150)
@@ -13,12 +13,11 @@
  * - updatedAt: ISO 8601 UTC string
  *
  * SECURITY: payload is write-only. It is processed, discarded, and NEVER
- * stored in plaintext in localStorage or returned in mock responses.
+ * persisted to browser storage or returned in preview responses.
  */
 
 export const DEFAULT_MOCK_VAULT_ID = '00000000-0000-0000-0000-000000000001'
 
-const STORAGE_KEY = 'legacyvault_mock_assets_v2'
 
 export function generateMockUUID() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -64,28 +63,37 @@ export const INITIAL_MOCK_ASSETS = [
   },
 ]
 
-function getStoredAssets() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MOCK_ASSETS))
-      return INITIAL_MOCK_ASSETS
-    }
-    return JSON.parse(raw)
-  } catch {
-    return INITIAL_MOCK_ASSETS
-  }
-}
+let previewAssets = INITIAL_MOCK_ASSETS.map(item => ({ ...item }))
 
-function saveStoredAssets(assets) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets))
-  } catch {
-    // Fail gracefully — do not log sensitive payloads
-  }
-}
+function getStoredAssets() { return previewAssets.map(item => ({ ...item })) }
+function saveStoredAssets(assets) { previewAssets = assets }
 
 export const assetMock = {
+  async getAssetById(vaultId, assetId) {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const asset = getStoredAssets().find(item => item.id === assetId && item.vaultId === vaultId)
+    if (!asset) throw Object.assign(new Error('RESOURCE_NOT_FOUND'), { code: 'RESOURCE_NOT_FOUND', status: 404 })
+    return { ...asset }
+  },
+
+  async updateAsset(vaultId, assetId, patchData) {
+    await new Promise(resolve => setTimeout(resolve, 350))
+    const all = getStoredAssets()
+    const index = all.findIndex(item => item.id === assetId && item.vaultId === vaultId)
+    if (index === -1) throw Object.assign(new Error('RESOURCE_NOT_FOUND'), { code: 'RESOURCE_NOT_FOUND', status: 404 })
+    const current = all[index]
+    const updated = { ...current,
+      name: patchData.name === undefined ? current.name : patchData.name.trim(),
+      description: patchData.description === undefined ? current.description : patchData.description.trim(),
+      hasPayload: patchData.payload?.trim() ? true : current.hasPayload,
+      updatedAt: new Date().toISOString(),
+    }
+    // Never store the secret or other fields supplied by callers.
+    all[index] = updated
+    saveStoredAssets(all)
+    return { ...updated }
+  },
+
   /**
    * Mock getAssets with simulated latency.
    * @param {string} vaultId - Vault UUID
@@ -94,29 +102,12 @@ export const assetMock = {
   async getAssets(vaultId = DEFAULT_MOCK_VAULT_ID) {
     await new Promise((resolve) => setTimeout(resolve, 350))
     const all = getStoredAssets()
+    // TODO(mock): Vault filtering will be handled by backend API
     return all.filter((item) => !vaultId || item.vaultId === vaultId)
   },
 
   /**
-   * Mock getAssetById with simulated latency.
-   * @param {string} vaultId - Vault UUID
-   * @param {string} assetId - Asset UUID
-   * @returns {Promise<Object>} AssetResponse (no payload included)
-   */
-  async getAssetById(vaultId = DEFAULT_MOCK_VAULT_ID, assetId) {
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    const all = getStoredAssets()
-    const found = all.find(
-      (item) => item.id === assetId && (!vaultId || item.vaultId === vaultId)
-    )
-    if (!found) {
-      throw new Error(`Asset not found: ${assetId}`)
-    }
-    return { ...found }
-  },
-
-  /**
-   * Mock createAsset with simulated latency and storage.
+   * Mock createAsset with simulated latency and memory-only metadata.
    * @param {Object} assetData - { name, assetType, description, payload, vaultId }
    * @returns {Promise<Object>} AssetResponse (no payload included)
    */
@@ -140,61 +131,10 @@ export const assetMock = {
       updatedAt: now,
     }
 
-    // Persist to storage without plaintext payload
+    // Keep only preview metadata in memory, never persist user inputs
     const current = getStoredAssets()
     saveStoredAssets([newAsset, ...current])
 
     return newAsset
-  },
-
-  /**
-   * Mock updateAsset with simulated latency and storage.
-   * Updates only valid fields (name, description, payload).
-   * Refreshes updatedAt. Never stores plaintext payload.
-   *
-   * @param {string} vaultId - Vault UUID
-   * @param {string} assetId - Asset UUID
-   * @param {Object} patchData - { name?, description?, payload? }
-   * @returns {Promise<Object>} Updated AssetResponse
-   */
-  async updateAsset(vaultId = DEFAULT_MOCK_VAULT_ID, assetId, patchData) {
-    await new Promise((resolve) => setTimeout(resolve, 350))
-
-    const all = getStoredAssets()
-    const index = all.findIndex(
-      (item) => item.id === assetId && (!vaultId || item.vaultId === vaultId)
-    )
-    if (index === -1) {
-      throw new Error(`Asset not found: ${assetId}`)
-    }
-
-    const current = all[index]
-    const now = new Date().toISOString()
-
-    let newHasPayload = current.hasPayload
-    if (patchData.payload !== undefined && patchData.payload !== null) {
-      const trimmed = String(patchData.payload).trim()
-      if (trimmed.length > 0) {
-        newHasPayload = true
-      }
-    }
-
-    const updatedAsset = {
-      ...current,
-      name: patchData.name !== undefined ? patchData.name.trim() : current.name,
-      description:
-        patchData.description !== undefined
-          ? patchData.description.trim()
-          : current.description,
-      hasPayload: newHasPayload,
-      updatedAt: now,
-    }
-
-    // Discard any payload before saving to storage
-    const nextList = [...all]
-    nextList[index] = updatedAsset
-    saveStoredAssets(nextList)
-
-    return { ...updatedAsset }
   },
 }

@@ -17,12 +17,12 @@ import './AssetListTable.css'
  * SECURITY:
  * Never renders payload plaintext, internal DB IDs, or encryption metadata.
  */
-export function AssetDetailModal({ isOpen, onClose, asset, t }) {
+export function AssetDetailModal({ isOpen, onClose, asset, t, lang = 'vi' }) {
   if (!isOpen || !asset) return null
 
   function formatDate(isoString) {
     if (!isoString) return '—'
-    return new Date(isoString).toLocaleString('vi-VN', {
+    return new Date(isoString).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -41,6 +41,7 @@ export function AssetDetailModal({ isOpen, onClose, asset, t }) {
       isOpen={isOpen}
       onClose={onClose}
       title={t.assets.detailModal.title}
+      closeLabel={t.assets.closeBtn}
     >
       <div className="lv-detail-container">
         {/* Asset Name */}

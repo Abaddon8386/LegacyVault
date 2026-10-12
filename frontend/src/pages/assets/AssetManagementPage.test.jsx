@@ -37,7 +37,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   ]
 
   it('renders loading state initially and then shows asset list with summary cards', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -62,7 +62,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('collapses legal notice when clicking "Đã hiểu" and shows ⓘ icon', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -84,7 +84,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('filters assets by search keyword', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -100,7 +100,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('filters assets by assetType (TEXT vs CREDENTIAL)', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -116,7 +116,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('validates required fields before allowing asset creation', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     render(<AssetManagementPage t={t} />)
 
@@ -147,7 +147,7 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
   })
 
   it('creates asset with write-only payload and ensures payload is not in DOM or localStorage', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: mockAssets, totalElements: mockAssets.length })
 
     const secretPassword = 'SUPER_CONFIDENTIAL_KEY_987654321'
     const newMockAsset = {
@@ -160,7 +160,10 @@ describe('AssetManagementPage Contract-Aligned UI Tests (PS-5)', () => {
       createdAt: '2026-10-12T00:00:00Z',
       updatedAt: '2026-10-12T00:00:00Z',
     }
-    vi.spyOn(assetService, 'createAsset').mockResolvedValue(newMockAsset)
+    vi.spyOn(assetService, 'createAsset').mockImplementation(async () => {
+      assetService.getAssets.mockResolvedValue({ content: [newMockAsset, ...mockAssets], totalElements: 3 })
+      return newMockAsset
+    })
 
     render(<AssetManagementPage t={t} />)
 
@@ -232,6 +235,7 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     localStorage.clear()
+    vi.spyOn(assetService, 'getAssetById').mockResolvedValue(mockAssets[1])
   })
 
   const mockAssets = [
@@ -258,10 +262,10 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   ]
 
   it('opens View Asset detail modal and displays only allowed contract fields without exposing payload', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
     vi.spyOn(assetService, 'getAssetById').mockResolvedValue(mockAssets[1])
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
@@ -289,7 +293,7 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
     expect(screen.queryByText(/SUPER_SECRET/i)).not.toBeInTheDocument()
 
     // Can close the modal
-    const closeBtn = screen.getByRole('button', { name: t.assets.detailModal.closeBtn })
+    const closeBtn = screen.getAllByRole('button', { name: t.assets.detailModal.closeBtn })[0]
     fireEvent.click(closeBtn)
 
     await waitFor(() => {
@@ -298,10 +302,10 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   })
 
   it('opens Edit Asset modal prefilled with editable metadata only, assetType is read-only, and payload starts empty', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
     vi.spyOn(assetService, 'getAssetById').mockResolvedValue(mockAssets[1])
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
@@ -333,15 +337,19 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   })
 
   it('submitting Edit with blank payload omits payload from patch body', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
-    const updateSpy = vi.spyOn(assetService, 'updateAsset').mockResolvedValue({
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
+    const updateSpy = vi.spyOn(assetService, 'updateAsset').mockImplementation(async () => {
+      const updated = {
       ...mockAssets[1],
       name: 'Mật khẩu ví lạnh đã đổi tên',
       description: 'Mô tả mới',
       updatedAt: '2026-10-12T12:00:00Z',
+      }
+      assetService.getAssets.mockResolvedValue({ content: [updated, mockAssets[0]], totalElements: 2 })
+      return updated
     })
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
@@ -387,17 +395,21 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   })
 
   it('submitting Edit with new payload never stores or renders plaintext payload and refreshes UI', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
     const newSecret = 'MY_SUPER_TOP_SECRET_REPLACEMENT_KEY_777'
 
-    const updateSpy = vi.spyOn(assetService, 'updateAsset').mockResolvedValue({
+    const updateSpy = vi.spyOn(assetService, 'updateAsset').mockImplementation(async () => {
+      const updated = {
       ...mockAssets[1],
       name: 'Mật khẩu ví lạnh có khóa mới',
       hasPayload: true,
       updatedAt: '2026-10-12T15:00:00Z',
+      }
+      assetService.getAssets.mockResolvedValue({ content: [updated, mockAssets[0]], totalElements: 2 })
+      return updated
     })
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Mật khẩu ví lạnh Ledger').length).toBeGreaterThan(0)
@@ -453,9 +465,9 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   })
 
   it('validates name required and max length during Edit', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
@@ -485,10 +497,10 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
   })
 
   it('handles edit failure error gracefully', async () => {
-    vi.spyOn(assetService, 'getAssets').mockResolvedValue(mockAssets)
+    vi.spyOn(assetService, 'getAssets').mockResolvedValue({ content: [...mockAssets].reverse(), totalElements: mockAssets.length })
     vi.spyOn(assetService, 'updateAsset').mockRejectedValue(new Error('Update failed'))
 
-    render(<AssetManagementPage t={t} />)
+    render(<AssetManagementPage t={t} vaultId={mockAssets[1].vaultId} />)
 
     await waitFor(() => {
       expect(screen.getAllByText('Di chúc và tâm nguyện gia đình').length).toBeGreaterThan(0)
@@ -501,6 +513,7 @@ describe('AssetManagementPage PS-6 View & Edit Asset Tests', () => {
       expect(screen.getByRole('heading', { name: t.assets.editModal.title })).toBeInTheDocument()
     })
 
+    fireEvent.change(screen.getByPlaceholderText(t.assets.addModal.namePlaceholder), { target: { value: 'Changed name' } })
     const submitBtn = screen.getByRole('button', { name: t.assets.editModal.submitBtn })
     fireEvent.click(submitBtn)
 

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { translations } from './i18n/translations';
-import { DashboardLayout } from './layouts/DashboardLayout';
-import { AssetManagementPage } from './pages/assets/AssetManagementPage';
 import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
+import LoginPage from './pages/auth/LoginPage.jsx';
+import VaultOverviewPage from './pages/vault/VaultOverviewPage.jsx';
+import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
+import { translations } from './i18n/translations';
+import { AssetManagementPage } from './pages/assets/AssetManagementPage';
+import AppShell from './components/layout/AppShell.jsx';
 
-function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAssets }) {
-  const isLogin = currentPath === '/login';
-
+function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
   return (
     <main
       style={{
@@ -49,7 +50,7 @@ function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAsset
           }}
           aria-hidden="true"
         >
-          {isLogin ? '✦' : '404'}
+          404
         </div>
 
         <h1
@@ -61,7 +62,7 @@ function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAsset
             fontWeight: 600,
           }}
         >
-          {isLogin ? 'Trang chưa khả dụng' : 'Không tìm thấy trang'}
+          Không tìm thấy trang
         </h1>
 
         <p
@@ -72,9 +73,7 @@ function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAsset
             margin: '0 0 28px',
           }}
         >
-          {isLogin
-            ? 'Cổng đăng nhập hiện chưa mở. Vui lòng bắt đầu tại trang Đăng ký tài khoản.'
-            : 'Đường dẫn bạn yêu cầu không tồn tại hoặc chưa được kích hoạt trong hệ thống.'}
+          Đường dẫn bạn yêu cầu không tồn tại hoặc chưa được kích hoạt trong hệ thống.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -90,7 +89,7 @@ function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAsset
               color: '#ffffff',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 26px',
+              padding: '12px 24px',
               borderRadius: '10px',
               border: 'none',
               cursor: 'pointer',
@@ -100,28 +99,26 @@ function NotFoundFallback({ currentPath, onNavigateToRegister, onNavigateToAsset
             <span>Về trang Đăng ký</span>
             <span aria-hidden="true">→</span>
           </button>
-
           <button
             type="button"
-            onClick={onNavigateToAssets}
+            onClick={onNavigateToLogin}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              backgroundColor: 'transparent',
+              backgroundColor: '#f1ede4',
               color: '#164639',
               fontWeight: 600,
               fontSize: '14px',
-              padding: '12px 26px',
+              padding: '12px 24px',
               borderRadius: '10px',
-              border: '1px solid #eae5dc',
+              border: '1px solid #ded9ce',
               cursor: 'pointer',
               transition: 'background-color 0.2s ease',
             }}
           >
-            <span>Đến Quản lý Tài sản</span>
-            <span aria-hidden="true">→</span>
+            <span>Đến trang Đăng nhập</span>
           </button>
         </div>
       </div>
@@ -133,8 +130,9 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
     return typeof window !== 'undefined' ? window.location.pathname : '/register';
   });
-
   const [lang, setLang] = useState('vi');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -146,45 +144,94 @@ export default function App() {
 
   const navigateTo = (path) => {
     window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    setCurrentPath(path.split('?')[0]);
   };
 
-  const handleToggleLang = () => {
-    setLang((prev) => (prev === 'vi' ? 'en' : 'vi'));
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshTrigger((prev) => prev + 1);
+    await new Promise((r) => setTimeout(r, 600));
+    setIsRefreshing(false);
   };
 
-  const currentT = translations[lang];
+  // Environment gating
+  const isDev = !import.meta.env.PROD && Boolean(import.meta.env.DEV);
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const hasPreviewParam = searchParams?.get('preview') === 'true';
 
-  // Route mapping:
-  // PS-1 Vault Owner Registration: /register và / (mặc định mở Register)
-  // PS-5 Asset Management: /assets và /dashboard
+  // PS-1 routes: /register và / (mặc định mở Register)
   const isRegisterRoute = currentPath === '/register' || currentPath === '/';
+
+  // PS-2 route: /login
+  const isLoginRoute = currentPath === '/login';
+
+  // PS-3 Vault route:
+  const isVaultRoute = currentPath === '/vault' || currentPath === '/vaults';
+
+  // PS-4 DMS route:
+  const isDmsRoute = currentPath === '/dms';
   const isAssetRoute = currentPath === '/assets' || currentPath === '/dashboard';
 
-  if (isAssetRoute) {
+  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute)) {
+    const activeTab = isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
+
     return (
-      <DashboardLayout
-        t={currentT}
-        lang={lang}
-        onToggleLang={handleToggleLang}
-        activeNav="assets"
-      >
-        <AssetManagementPage t={currentT} />
-      </DashboardLayout>
+      <div className="lv-app-root">
+        <AppShell
+          currentTab={activeTab}
+          lang={lang}
+          onToggleLang={setLang}
+          onLogout={() => navigateTo('/login')}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+          onNavigateTab={(tab) => {
+            if (tab === 'vault') {
+              navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
+            } else if (tab === 'assets') {
+              navigateTo(hasPreviewParam ? '/assets?preview=true' : '/assets');
+            } else if (tab === 'dms') {
+              navigateTo(hasPreviewParam ? '/dms?preview=true' : '/dms');
+            }
+          }}
+        >
+          {isAssetRoute ? (
+            <AssetManagementPage
+              key={hasPreviewParam ? 'preview-assets' : 'live-assets'}
+              t={translations[lang]} lang={lang}
+              isDevPreview={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : isDmsRoute ? (
+            <DMSOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : (
+            <VaultOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          )}
+        </AppShell>
+      </div>
     );
   }
 
   return (
     <div className="lv-app-root">
       {isRegisterRoute ? (
-        <RegisterPageHenedo
-          onNavigateToLogin={() => navigateTo('/login')}
-        />
+        <RegisterPageHenedo onNavigateToLogin={() => navigateTo('/login')} />
+      ) : isLoginRoute ? (
+        <LoginPage onNavigateToRegister={() => navigateTo('/register')} />
       ) : (
         <NotFoundFallback
-          currentPath={currentPath}
           onNavigateToRegister={() => navigateTo('/register')}
-          onNavigateToAssets={() => navigateTo('/assets')}
+          onNavigateToLogin={() => navigateTo('/login')}
         />
       )}
     </div>
