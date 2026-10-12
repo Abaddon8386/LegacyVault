@@ -69,6 +69,31 @@ function getStoredAssets() { return previewAssets.map(item => ({ ...item })) }
 function saveStoredAssets(assets) { previewAssets = assets }
 
 export const assetMock = {
+  async getAssetById(vaultId, assetId) {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const asset = getStoredAssets().find(item => item.id === assetId && item.vaultId === vaultId)
+    if (!asset) throw Object.assign(new Error('RESOURCE_NOT_FOUND'), { code: 'RESOURCE_NOT_FOUND', status: 404 })
+    return { ...asset }
+  },
+
+  async updateAsset(vaultId, assetId, patchData) {
+    await new Promise(resolve => setTimeout(resolve, 350))
+    const all = getStoredAssets()
+    const index = all.findIndex(item => item.id === assetId && item.vaultId === vaultId)
+    if (index === -1) throw Object.assign(new Error('RESOURCE_NOT_FOUND'), { code: 'RESOURCE_NOT_FOUND', status: 404 })
+    const current = all[index]
+    const updated = { ...current,
+      name: patchData.name === undefined ? current.name : patchData.name.trim(),
+      description: patchData.description === undefined ? current.description : patchData.description.trim(),
+      hasPayload: patchData.payload?.trim() ? true : current.hasPayload,
+      updatedAt: new Date().toISOString(),
+    }
+    // Never store the secret or other fields supplied by callers.
+    all[index] = updated
+    saveStoredAssets(all)
+    return { ...updated }
+  },
+
   /**
    * Mock getAssets with simulated latency.
    * @param {string} vaultId - Vault UUID

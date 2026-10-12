@@ -537,3 +537,14 @@
     width: 100%;
   }
 }
+
+.lv-asset-page .lv-asset-actions { display: inline-flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.lv-asset-page .lv-action-more-btn:focus-visible { outline: 2px solid var(--lv-accent-gold); outline-offset: 2px; }
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .lv-asset-page .lv-table th, .lv-asset-page .lv-table td { padding-inline: 12px; }
+  .lv-asset-page .lv-td-asset-name { min-width: 180px; max-width: 260px; }
+}
+@media (max-width: 640px) {
+  .lv-asset-page .lv-action-more-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+}

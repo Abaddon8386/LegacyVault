@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  Eye,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '../common/Button'
 import './AssetListTable.css'
@@ -18,7 +20,7 @@ import './AssetListTable.css'
  * Displays contract metadata: name, assetType (TEXT | CREDENTIAL), hasPayload, createdAt.
  * Supports sorting and pagination.
  */
-export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, onQueryChange }) {
+export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, onQueryChange, onViewAsset, onEditAsset }) {
   const [sortField, sortOrder] = query.sort.split(',')
   const currentPage = query.page + 1
   const pageSize = query.size
@@ -107,6 +109,7 @@ export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, o
                   {renderSortIcon('createdAt')}
                 </div>
               </th>
+              <th scope="col" className="lv-th-center">{t.assets.colActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -158,6 +161,12 @@ export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, o
                       {formatDate(asset.createdAt)}
                     </span>
                   </td>
+                  <td className="lv-td-center lv-td-action"><div className="lv-asset-actions">
+                      <button type="button" className="lv-action-more-btn" onClick={() => onViewAsset(asset)}
+                        title={t.assets.actions.viewDetail} aria-label={`${t.assets.actions.viewDetail}: ${asset.name}`}><Eye size={16} /></button>
+                      <button type="button" className="lv-action-more-btn" onClick={() => onEditAsset(asset)}
+                        title={t.assets.actions.edit} aria-label={`${t.assets.actions.edit}: ${asset.name}`}><Pencil size={16} /></button>
+                    </div></td>
                 </tr>
               )
             })}
@@ -182,6 +191,12 @@ export function AssetListTable({ assets, t, lang = 'vi', query, totalElements, o
                     {asset.name}
                   </span>
                 </div>
+                <div className="lv-asset-actions">
+                      <button type="button" className="lv-action-more-btn" onClick={() => onViewAsset(asset)}
+                        title={t.assets.actions.viewDetail} aria-label={`${t.assets.actions.viewDetail}: ${asset.name}`}><Eye size={16} /></button>
+                      <button type="button" className="lv-action-more-btn" onClick={() => onEditAsset(asset)}
+                        title={t.assets.actions.edit} aria-label={`${t.assets.actions.edit}: ${asset.name}`}><Pencil size={16} /></button>
+                    </div>
               </div>
 
               {asset.description && (

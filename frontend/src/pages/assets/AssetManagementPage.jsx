@@ -16,6 +16,8 @@ import { Modal } from '../../components/common/Modal'
 import { AssetListTable } from '../../components/assets/AssetListTable'
 import { AssetFormModal } from '../../components/assets/AssetFormModal'
 import { AssetSummaryCards } from '../../components/assets/AssetSummaryCards'
+import { AssetDetailModal } from '../../components/assets/AssetDetailModal'
+import { AssetEditModal } from '../../components/assets/AssetEditModal'
 import './AssetManagementPage.css'
 
 const LEGAL_DISMISSED_KEY = 'legacyvault_legal_notice_dismissed'
@@ -47,6 +49,16 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toastMessage, setToastMessage] = useState(null)
+  const [assetAction, setAssetAction] = useState(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const updateRef = useRef(false)
+  const actionSequence = useRef(0)
+  const actionAbort = useRef(null)
+  const scopeRef = useRef(null)
+  useEffect(() => {
+    scopeRef.current = { vaultId, accessToken, isDevPreview }
+    return () => { actionSequence.current += 1; actionAbort.current?.abort() }
+  }, [vaultId, accessToken, isDevPreview])
 
   // Legal Notice collapsible behavior
   const [isLegalDismissed, setIsLegalDismissed] = useState(() => {
@@ -74,6 +86,9 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
       setIsLoading(true)
       setError(null)
       setAssets([])
+      actionSequence.current += 1
+      actionAbort.current?.abort()
+      setAssetAction(null)
       try {
         const data = await assetService.getAssets(vaultId, {
           ...query, lang: requestContext.current.lang, accessToken, isDevPreview,
@@ -127,6 +142,57 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
     }
   }
 
+  function closeAssetAction() {
+    if (updateRef.current) return
+    actionSequence.current += 1
+    actionAbort.current?.abort()
+    setAssetAction(null)
+  }
+
+  async function openAssetAction(asset, mode) {
+    actionAbort.current?.abort()
+    const controller = new AbortController()
+    actionAbort.current = controller
+    const sequence = ++actionSequence.current
+    const scope = scopeRef.current
+    setAssetAction({ mode, assetId: asset.id, scope, detail: null, loading: true, error: null })
+    try {
+      const detail = await assetService.getAssetById(vaultId, asset.id, { lang, accessToken, isDevPreview, signal: controller.signal })
+      if (!aliveRef.current || sequence !== actionSequence.current || scope !== scopeRef.current) return
+      setAssetAction({ mode, assetId: asset.id, scope, detail, loading: false, error: null })
+    } catch (error) {
+      if (!aliveRef.current || sequence !== actionSequence.current || scope !== scopeRef.current || error.name === 'AbortError') return
+      // Failed GET never falls back to list metadata, including 403/404.
+      setAssetAction({ mode, assetId: asset.id, scope, detail: null, loading: false, error: error.code || 'detailError' })
+    }
+  }
+
+  async function handleUpdateAsset(assetId, patchData) {
+    if (updateRef.current) return
+    updateRef.current = true
+    setIsUpdating(true)
+    const scope = scopeRef.current
+    const sequence = actionSequence.current
+    const controller = new AbortController()
+    actionAbort.current = controller
+    try {
+      const updated = await assetService.updateAsset(vaultId, assetId, patchData, { lang, accessToken, isDevPreview, signal: controller.signal })
+      if (!aliveRef.current || scope !== scopeRef.current || sequence !== actionSequence.current) return
+      setAssets(prev => prev.map(item => item.id === assetId ? updated : item))
+      setAssetAction(null)
+      showToast('editSuccess')
+      setRetry(value => value + 1)
+    } catch (error) {
+      if (!aliveRef.current || scope !== scopeRef.current || sequence !== actionSequence.current || error.name === 'AbortError') return
+      const code = error.code || 'editError'
+      const hideMetadata = ['UNAUTHENTICATED', 'ACCESS_DENIED', 'RESOURCE_NOT_FOUND', 'VAULT_NOT_EDITABLE'].includes(code)
+      setAssetAction(prev => prev ? { ...prev, error: code, ...(hideMetadata ? { detail: null } : {}) } : null)
+    } finally {
+      updateRef.current = false
+      if (aliveRef.current) setIsUpdating(false)
+    }
+  }
+
   // Client-side filtering by assetType and searching by name/description
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
@@ -140,6 +206,10 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
       return matchesType && matchesQuery
     })
   }, [assets, selectedAssetType, searchQuery])
+
+  const currentAction = assetAction?.scope?.vaultId === vaultId &&
+    assetAction?.scope?.accessToken === accessToken && assetAction?.scope?.isDevPreview === isDevPreview
+    ? assetAction : null
 
   const hasAnyAssets = totalElements > 0
   const isSearchNoResults = hasAnyAssets && filteredAssets.length === 0
@@ -187,7 +257,7 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
           onClick={() => setIsAddModalOpen(true)}
           className="lv-add-btn"
           aria-label={t.assets.addNewBtn}
-          disabled={isLoading || Boolean(error)}
+          disabled={isLoading || Boolean(error) || Boolean(currentAction)}
         >
           <Plus size={18} />
           <span className="lv-add-btn__text">{t.assets.addNewBtn}</span>
@@ -305,6 +375,8 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
         )}
         <AssetListTable assets={filteredAssets} t={t} lang={lang}
           query={query} totalElements={totalElements}
+          onViewAsset={asset => openAssetAction(asset, 'view')}
+          onEditAsset={asset => openAssetAction(asset, 'edit')}
           onQueryChange={next => { setIsLoading(true); setQuery(next) }} />
         </>
       )}
@@ -313,10 +385,10 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
       <button
         type="button"
         className="lv-mobile-fab"
-        style={{ visibility: isAddModalOpen ? 'hidden' : undefined }}
+        style={{ visibility: isAddModalOpen || currentAction ? 'hidden' : undefined }}
         onClick={() => setIsAddModalOpen(true)}
         aria-label={t.assets.addNewBtn}
-        disabled={isLoading || Boolean(error)}
+        disabled={isLoading || Boolean(error) || Boolean(currentAction)}
       >
         <Plus size={24} />
       </button>
@@ -338,6 +410,24 @@ export function AssetManagementPage({ t, lang = 'vi', vaultId, accessToken,
           </Button>
         </div>
       </Modal>
+
+      {currentAction && !currentAction.detail && <Modal
+        isOpen={true} onClose={closeAssetAction} closeLabel={t.assets.closeBtn}
+        title={currentAction.mode === 'view' ? t.assets.detailModal.title : t.assets.editModal.title}
+      >
+        {currentAction.loading ? <p role="status">{t.assets.alerts.detailLoading}</p> : <>
+          <p role="alert">{t.assets.alerts[currentAction.error] || t.assets.alerts.detailError}</p>
+          <div className="lv-modal-actions-right">
+            {currentAction.error === 'UNAUTHENTICATED' && onNavigateToLogin && <Button onClick={onNavigateToLogin}>{t.assets.signIn}</Button>}
+            <Button onClick={() => openAssetAction({ id: currentAction.assetId }, currentAction.mode)}>{t.assets.alerts.retryBtn}</Button>
+          </div>
+        </>}
+      </Modal>}
+      {currentAction?.detail && currentAction.mode === 'view' && <AssetDetailModal
+        isOpen={true} onClose={closeAssetAction} asset={currentAction.detail} t={t} lang={lang} />}
+      {currentAction?.detail && currentAction.mode === 'edit' && <AssetEditModal
+        key={currentAction.assetId} isOpen={true} onClose={closeAssetAction} asset={currentAction.detail}
+        onSubmit={handleUpdateAsset} t={t} isSubmitting={isUpdating} errorKey={currentAction.error} />}
 
       {/* Add Asset Modal */}
       {isAddModalOpen && <AssetFormModal

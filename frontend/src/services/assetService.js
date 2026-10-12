@@ -77,6 +77,41 @@ export const assetService = {
     return { ...data, content: data.content.map(item => metadata(item, vaultId)) }
   },
 
+  async getAssetById(vaultId, assetId, options = {}) {
+    vaultId = resolveVault(vaultId, options)
+    if (!UUID.test(assetId || '')) throw fail('RESOURCE_NOT_FOUND', 404)
+    const data = isAssetPreview(options)
+      ? await assetMock.getAssetById(vaultId, assetId)
+      : await request(`/vaults/${encodeURIComponent(vaultId)}/assets/${encodeURIComponent(assetId)}`, { method: 'GET' }, options)
+    const detail = metadata(data, vaultId)
+    if (detail.id !== assetId) throw fail('BACKEND_NOT_READY')
+    return detail
+  },
+
+  // PATCH is the proposed PS-74 D-API-24 contract; final BE alignment is pending.
+  async updateAsset(vaultId, assetId, patchData = {}, options = {}) {
+    vaultId = resolveVault(vaultId, options)
+    if (!UUID.test(assetId || '')) throw fail('RESOURCE_NOT_FOUND', 404)
+    const body = {}
+    for (const field of ['name', 'description', 'payload']) {
+      if (!Object.hasOwn(patchData, field)) continue
+      if (typeof patchData[field] !== 'string') throw fail('VALIDATION_FAILED', 400)
+      body[field] = field === 'payload' ? patchData[field] : patchData[field].trim()
+    }
+    if (!Object.keys(body).length ||
+        (Object.hasOwn(body, 'name') && (!body.name || body.name.length > 150)) ||
+        (body.description?.length > 1000) ||
+        (Object.hasOwn(body, 'payload') && !body.payload.trim())) throw fail('VALIDATION_FAILED', 400)
+    const data = isAssetPreview(options)
+      ? await assetMock.updateAsset(vaultId, assetId, body)
+      : await request(`/vaults/${encodeURIComponent(vaultId)}/assets/${encodeURIComponent(assetId)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }, options)
+    const updated = metadata(data, vaultId)
+    if (updated.id !== assetId) throw fail('BACKEND_NOT_READY')
+    return updated
+  },
+
   async createAsset(vaultId, assetData, options = {}) {
     vaultId = resolveVault(vaultId, options)
     const body = { name: assetData.name?.trim(), assetType: assetData.assetType,
