@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import RegisterPageHenedo from './pages/auth/RegisterPageHenedo.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
+import VaultOverviewPage from './pages/vault/VaultOverviewPage.jsx';
+import DMSOverviewPage from './pages/dms/DMSOverviewPage.jsx';
+import { translations } from './i18n/translations';
+import { AssetManagementPage } from './pages/assets/AssetManagementPage';
 import WillUploadPage from './pages/wills/WillUploadPage.jsx';
+import AppShell from './components/layout/AppShell.jsx';
 
-function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateToWills }) {
+function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin }) {
   return (
     <main
       style={{
@@ -116,29 +121,6 @@ function NotFoundFallback({ onNavigateToRegister, onNavigateToLogin, onNavigateT
           >
             <span>Đến trang Đăng nhập</span>
           </button>
-          {onNavigateToWills && (
-            <button
-              type="button"
-              onClick={onNavigateToWills}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                backgroundColor: '#ffffff',
-                color: '#164639',
-                fontWeight: 600,
-                fontSize: '14px',
-                padding: '12px 24px',
-                borderRadius: '10px',
-                border: '1px solid #c5a059',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease',
-              }}
-            >
-              <span>Di chúc số hóa</span>
-            </button>
-          )}
         </div>
       </div>
     </main>
@@ -149,6 +131,9 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => {
     return typeof window !== 'undefined' ? window.location.pathname : '/register';
   });
+  const [lang, setLang] = useState('vi');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -160,13 +145,89 @@ export default function App() {
 
   const navigateTo = (path) => {
     window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    setCurrentPath(path.split('?')[0]);
   };
 
-  // Các route hợp lệ
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshTrigger((prev) => prev + 1);
+    await new Promise((r) => setTimeout(r, 600));
+    setIsRefreshing(false);
+  };
+
+  // Environment gating
+  const isDev = !import.meta.env.PROD && Boolean(import.meta.env.DEV);
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const hasPreviewParam = searchParams?.get('preview') === 'true';
+
+  // PS-1 routes: /register và / (mặc định mở Register)
   const isRegisterRoute = currentPath === '/register' || currentPath === '/';
+
+  // PS-2 route: /login
   const isLoginRoute = currentPath === '/login';
+
+  // PS-3 Vault route:
+  const isVaultRoute = currentPath === '/vault' || currentPath === '/vaults';
+
+  // PS-4 DMS route:
+  const isDmsRoute = currentPath === '/dms';
+  const isAssetRoute = currentPath === '/assets' || currentPath === '/dashboard';
+
   const isWillRoute = currentPath === '/wills' || currentPath === '/wills/upload';
+
+  if (isDev && (isVaultRoute || isDmsRoute || isAssetRoute || isWillRoute)) {
+    const activeTab = isWillRoute ? 'wills' : isAssetRoute ? 'assets' : isDmsRoute ? 'dms' : 'vault';
+
+    return (
+      <div className="lv-app-root">
+        <AppShell
+          currentTab={activeTab}
+          lang={lang}
+          onToggleLang={setLang}
+          onLogout={() => navigateTo('/login')}
+          onRefresh={isWillRoute ? undefined : handleRefresh}
+          isRefreshing={isRefreshing}
+          onNavigateTab={(tab) => {
+            if (tab === 'wills') {
+              navigateTo(hasPreviewParam ? '/wills?preview=true' : '/wills');
+            } else if (tab === 'vault') {
+              navigateTo(hasPreviewParam ? '/vault?preview=true' : '/vault');
+            } else if (tab === 'assets') {
+              navigateTo(hasPreviewParam ? '/assets?preview=true' : '/assets');
+            } else if (tab === 'dms') {
+              navigateTo(hasPreviewParam ? '/dms?preview=true' : '/dms');
+            }
+          }}
+        >
+          {isWillRoute ? (
+            <WillUploadPage key={hasPreviewParam ? 'preview-wills' : 'live-wills'} lang={lang} isDevPreview={hasPreviewParam} />
+          ) : isAssetRoute ? (
+            <AssetManagementPage
+              key={hasPreviewParam ? 'preview-assets' : 'live-assets'}
+              t={translations[lang]} lang={lang}
+              isDevPreview={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : isDmsRoute ? (
+            <DMSOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          ) : (
+            <VaultOverviewPage
+              lang={lang}
+              showDevToolbar={hasPreviewParam}
+              onNavigateToLogin={() => navigateTo('/login')}
+              onRefreshTrigger={refreshTrigger}
+            />
+          )}
+        </AppShell>
+      </div>
+    );
+  }
 
   return (
     <div className="lv-app-root">
@@ -174,15 +235,12 @@ export default function App() {
         <RegisterPageHenedo onNavigateToLogin={() => navigateTo('/login')} />
       ) : isLoginRoute ? (
         <LoginPage onNavigateToRegister={() => navigateTo('/register')} />
-      ) : isWillRoute ? (
-        <WillUploadPage onNavigateHome={() => navigateTo('/register')} />
       ) : (
         <NotFoundFallback
           onNavigateToRegister={() => navigateTo('/register')}
           onNavigateToLogin={() => navigateTo('/login')}
-          onNavigateToWills={() => navigateTo('/wills')}
         />
       )}
     </div>
   );
-}
+}

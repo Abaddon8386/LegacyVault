@@ -54,7 +54,7 @@ describe('Will Upload Validation (PS-7)', () => {
 
   it('validates optional note length <= 500 characters', () => {
     const validFile = { name: 'di_chuc.pdf', type: 'application/pdf', size: 1000 };
-    
+
     // Exactly 500 chars is valid
     const note500 = 'a'.repeat(500);
     const errors500 = validateWillUpload({ file: validFile, note: note500 }, 'vi');

@@ -1,468 +1,156 @@
-import { useState, useRef } from 'react';
-import {
-  validateWillUpload,
-  ACCEPTED_FILE_EXTENSIONS,
-  MAX_NOTE_LENGTH,
-} from '../../utils/willValidation.js';
-import {
-  willService,
-  willStatusMessages,
-  formatFileSize,
-  formatDateTime,
-  DEFAULT_MOCK_VAULT_ID,
-} from '../../utils/willService.js';
+import { useEffect, useRef, useState } from 'react';
+import { willService, willStatusMessages, formatFileSize, formatDateTime } from '../../utils/willService.js';
+import { getWillUploadErrors, willValidationMessages, MAX_NOTE_LENGTH } from '../../utils/willValidation.js';
 import './WillUploadPage.css';
 
-/**
- * WillUploadPage — PS-7: [FE][ST-03] Upload Digitized Will
- *
- * SCOPE & CONTRACT SPECIFICATION:
- * - Contract: POST /api/v1/vaults/{vaultId}/wills (multipart/form-data)
- * - File: required (PDF, JPEG, PNG <= 10MB)
- * - Note: optional, max 500 characters
- * - Result display:
- *     status = UPLOADED
- *     currentVersion.version
- *     fileName
- *     contentType
- *     sizeBytes
- *     sha256
- *     uploadedAt
- *     createdAt
- *
- * CRITICAL SEMANTIC INVARIANTS:
- * - Upload does NOT imply legal approval.
- * - Never display LEGAL_APPROVED or claim legal validity.
- * - SHA-256 is technical integrity metadata only, not proof of authenticity.
- * - No file viewing, downloading, previewing, or exposing raw file bytes.
- */
-export default function WillUploadPage({
-  vaultId = DEFAULT_MOCK_VAULT_ID,
-  onNavigateHome,
-}) {
-  const [lang, setLang] = useState('vi');
-  const [selectedFile, setSelectedFile] = useState(null);
+const copy = {
+  vi: {
+    title: 'Lưu bản di chúc số hóa', intro: 'Lưu giữ bản chụp hoặc bản quét di chúc trong hồ sơ di sản của bạn.',
+    formTitle: 'Tài liệu di chúc', formats: 'PDF, JPEG hoặc PNG · Tối đa 10 MB', choose: 'Chọn tệp tài liệu',
+    chooseHint: 'Chọn bản chụp hoặc bản quét rõ nét, đầy đủ các trang.', remove: 'Bỏ chọn tệp',
+    progress: 'Tiến trình tải lên', preparing: 'Đang chuẩn bị tài liệu…', sending: 'Đang gửi tài liệu…',
+    confirming: 'Đang xác nhận kết quả…', cancel: 'Hủy thao tác', another: 'Tải lên tài liệu khác',
+    saved: 'Tài liệu đã được ghi nhận', details: 'Thông tin đối chiếu tài liệu',
+    errors: {
+      BACKEND_NOT_READY: 'Chưa thể kết nối hồ sơ di chúc. Vui lòng thử lại sau.',
+      UNAUTHORIZED: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+      FORBIDDEN: 'Bạn không có quyền tải tài liệu vào kho này.', NOT_FOUND: 'Không tìm thấy kho di sản.',
+      VAULT_NOT_EDITABLE: 'Kho hiện không cho phép bổ sung tài liệu.',
+      PAYLOAD_TOO_LARGE: 'Tài liệu quá lớn. Vui lòng chọn tệp nhỏ hơn.',
+      UNSUPPORTED_MEDIA_TYPE: 'Vui lòng chọn tài liệu PDF, JPEG hoặc PNG.',
+      VALIDATION_FAILED: 'Tài liệu hoặc ghi chú chưa hợp lệ. Vui lòng kiểm tra lại.',
+      ABORTED: 'Đã dừng chờ tải lên. Vui lòng kiểm tra hồ sơ trước khi thử lại.',
+      TIMEOUT: 'Chưa nhận được kết quả tải lên. Vui lòng kiểm tra hồ sơ trước khi thử lại.',
+    },
+  },
+  en: {
+    title: 'Store a digitized will', intro: 'Keep a photographed or scanned copy of your will in your heritage records.',
+    formTitle: 'Will document', formats: 'PDF, JPEG or PNG · Up to 10 MB', choose: 'Choose document',
+    chooseHint: 'Choose a clear, complete photograph or scan.', remove: 'Remove file',
+    progress: 'Upload progress', preparing: 'Preparing document…', sending: 'Sending document…',
+    confirming: 'Confirming upload…', cancel: 'Cancel upload', another: 'Upload another document',
+    saved: 'Document recorded', details: 'Document comparison information',
+    errors: {
+      BACKEND_NOT_READY: 'Will records cannot be reached yet. Please try again later.',
+      UNAUTHORIZED: 'Your session has expired. Please sign in again.',
+      FORBIDDEN: 'You do not have permission to upload to this vault.', NOT_FOUND: 'Heritage vault not found.',
+      VAULT_NOT_EDITABLE: 'This vault currently does not accept new documents.',
+      PAYLOAD_TOO_LARGE: 'The document is too large. Please choose a smaller file.',
+      UNSUPPORTED_MEDIA_TYPE: 'Please select a PDF, JPEG or PNG document.',
+      VALIDATION_FAILED: 'Please check the document and note before trying again.',
+      ABORTED: 'Stopped waiting for the upload. Check your records before trying again.',
+      TIMEOUT: 'No upload result received. Check your records before trying again.',
+    },
+  },
+};
+const formatNames = { 'application/pdf': 'PDF', 'image/jpeg': 'JPEG', 'image/png': 'PNG' };
+
+export default function WillUploadPage(props) {
+  return <UploadForm key={JSON.stringify([props.vaultId, props.accessToken, props.isDevPreview])} {...props} />;
+}
+
+function UploadForm({ lang = 'vi', vaultId, accessToken, isDevPreview = false }) {
+  const language = lang === 'en' ? 'en' : 'vi';
+  const t = copy[language]; const messages = willStatusMessages[language];
+  const [file, setFile] = useState(null);
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [uploadResult, setUploadResult] = useState(null);
+  const [errorCode, setErrorCode] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
+  const pendingRef = useRef(false);
+  const requestRef = useRef(null);
+  const contextRef = useRef(null);
 
-  const fileInputRef = useRef(null);
-  const t = willStatusMessages[lang] || willStatusMessages.vi;
+  useEffect(() => {
+    const context = {};
+    contextRef.current = context;
+    return () => {
+      contextRef.current = null;
+      requestRef.current?.abort();
+      requestRef.current = null;
+      pendingRef.current = false;
+    };
+  }, []);
 
-  // Handle file selection
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setSelectedFile(file);
-    if (errors.file) {
-      setErrors((prev) => ({ ...prev, file: undefined }));
-    }
-    setSubmitError(null);
-  };
-
-  // Clear chosen file
-  const handleClearFile = (e) => {
-    e.stopPropagation();
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // Handle note change with length monitoring
-  const handleNoteChange = (e) => {
-    const val = e.target.value;
-    setNote(val);
-    if (errors.note) {
-      setErrors((prev) => ({ ...prev, note: undefined }));
-    }
-    setSubmitError(null);
-  };
-
-  // Form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate inputs
-    const validationErrors = validateWillUpload({ file: selectedFile, note }, lang);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
+  // A changed vault/session gets a separate form; old receipts never carry across owners.
+  const current = result?.receipt;
+  async function submit(event) {
+    event.preventDefault();
+    if (pendingRef.current) return;
+    const nextErrors = getWillUploadErrors({ file, note });
+    setErrors(nextErrors); setErrorCode(null);
+    if (Object.keys(nextErrors).length) return;
+    pendingRef.current = true;
+    const context = contextRef.current;
+    const controller = new AbortController(); requestRef.current = controller;
+    setBusy(true); setProgress(0);
     try {
-      const response = await willService.uploadWill(vaultId, selectedFile, note);
-      setUploadResult(response);
-      setErrors({});
-    } catch (err) {
-      setSubmitError(err.message || t.UPLOAD_FAILED);
+      const receipt = await willService.uploadWill(vaultId, file, note, {
+        lang: language, accessToken, isDevPreview, signal: controller.signal,
+        onProgress: value => { if (contextRef.current === context && requestRef.current === controller) setProgress(value); },
+      });
+      if (contextRef.current !== context || requestRef.current !== controller || controller.signal.aborted) return;
+      setResult({ receipt, context }); setFile(null); setNote('');
+      if (inputRef.current) inputRef.current.value = '';
+    } catch (error) {
+      if (contextRef.current !== context || requestRef.current !== controller) return;
+      setErrorCode(error?.code || 'UPLOAD_FAILED');
+      if (error?.fieldErrors) setErrors(error.fieldErrors);
     } finally {
-      setIsSubmitting(false);
+      if (contextRef.current === context && requestRef.current === controller) {
+        pendingRef.current = false; requestRef.current = null; setBusy(false);
+      }
     }
-  };
-
-  // Reset form to upload another document or re-try
-  const handleReset = () => {
-    setSelectedFile(null);
-    setNote('');
-    setErrors({});
-    setSubmitError(null);
-    setUploadResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
+  }
+  const v = current?.currentVersion;
   return (
-    <div className="hn-will-page">
-      {/* Top Header Navigation Bar */}
-      <header className="hn-will-topbar">
-        <div className="hn-will-topbar-left">
-          <div
-            className="hn-will-brand-lockup"
-            onClick={onNavigateHome}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') onNavigateHome?.();
-            }}
-          >
-            <div className="hn-will-brand-crest" aria-hidden="true">
-              <span className="hn-will-brand-crest-symbol">LV</span>
-            </div>
-            <div>
-              <div className="hn-will-brand-title">LegacyVault</div>
-              <div className="hn-will-brand-subtitle">
-                {lang === 'vi' ? 'Kho di sản số' : 'Estate Sanctuary'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="hn-will-topbar-right">
-          {/* Language Switch */}
-          <div className="hn-will-lang-switch" role="group" aria-label="Language selection">
-            <button
-              type="button"
-              className={`hn-will-lang-btn ${lang === 'vi' ? 'is-active' : ''}`}
-              onClick={() => setLang('vi')}
-            >
-              VI
-            </button>
-            <button
-              type="button"
-              className={`hn-will-lang-btn ${lang === 'en' ? 'is-active' : ''}`}
-              onClick={() => setLang('en')}
-            >
-              EN
-            </button>
-          </div>
-
-          {onNavigateHome && (
-            <button
-              type="button"
-              className="hn-will-nav-back"
-              onClick={onNavigateHome}
-            >
-              <span aria-hidden="true">←</span>
-              <span>{lang === 'vi' ? 'Quay lại' : 'Back'}</span>
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="hn-will-container">
-        {/* Intro */}
-        <section className="hn-will-intro">
-          <div className="hn-will-badge-pill">
-            <span aria-hidden="true">📜</span>
-            <span>{lang === 'vi' ? 'Phân hệ Di chúc số hóa' : 'Digitized Will Module'}</span>
-          </div>
-          <h1 className="hn-will-page-title">
-            {lang === 'vi' ? 'Tải lên Bản Di Chúc Số Hóa' : 'Upload Digitized Will'}
-          </h1>
-          <p className="hn-will-page-desc">
-            {lang === 'vi'
-              ? 'Lưu trữ hồ sơ tài liệu di chúc số hóa ban đầu vào kho di sản an toàn với mã băm toàn vẹn SHA-256 độc lập.'
-              : 'Secure initial digitized will document inventory with tamper-evident cryptographic SHA-256 integrity metadata.'}
-          </p>
+    <section className="hn-will-page" aria-labelledby="will-title">
+      <div className="hn-will-intro">
+        <h1 id="will-title">{t.title}</h1><p>{t.intro}</p>
+      </div>
+      <aside className="hn-will-notice" aria-label={messages.NOTICE_TITLE}>
+        <span aria-hidden="true">ⓘ</span><div><strong>{messages.NOTICE_TITLE}</strong><p>{messages.NOTICE_CONTENT}</p></div>
+      </aside>
+      {current ? (
+        <section className="hn-will-card" aria-labelledby="will-saved">
+          <div className="hn-will-success" role="status"><span aria-hidden="true">✓</span><div><h2 id="will-saved">{t.saved}</h2><p>{messages.UPLOAD_SUCCESS}</p></div></div>
+          <dl className="hn-will-metadata">
+            <div><dt>{messages.STATUS_LABEL}</dt><dd><span className="hn-will-status">{messages.UPLOADED}</span></dd></div>
+            <div><dt>{messages.VERSION_LABEL}</dt><dd>{v.version}</dd></div>
+            <div><dt>{messages.FILE_NAME_LABEL}</dt><dd>{v.fileName}</dd></div>
+            <div><dt>{messages.MIME_TYPE_LABEL}</dt><dd>{formatNames[v.contentType]}</dd></div>
+            <div><dt>{messages.FILE_SIZE_LABEL}</dt><dd>{formatFileSize(v.sizeBytes)}</dd></div>
+            <div><dt>{messages.UPLOADED_AT_LABEL}</dt><dd>{formatDateTime(v.uploadedAt, language)}</dd></div>
+          </dl>
+          {v.sha256 && <details className="hn-will-hash"><summary>{t.details}</summary><p>{messages.SHA256_LABEL}</p><code>{v.sha256}</code><p>{messages.SHA256_HINT}</p></details>}
+          <button type="button" className="hn-will-secondary" onClick={() => { setResult(null); setErrors({}); setErrorCode(null); }}>{t.another}</button>
         </section>
-
-        {/* Legal Advisory Notice (CRITICAL SEMANTICS) */}
-        <aside className="hn-will-legal-banner" role="note" aria-label={t.NOTICE_TITLE}>
-          <div className="hn-will-legal-icon" aria-hidden="true">
-            ℹ
+      ) : (
+        <form className="hn-will-card" onSubmit={submit} noValidate aria-busy={busy}>
+          <h2>{t.formTitle}</h2><p className="hn-will-formats" id="will-file-hint">{t.formats}</p>
+          <label className="hn-will-label" htmlFor="will-file">{messages.FILE_LABEL} <span aria-hidden="true">*</span></label>
+          <input className="hn-will-file-input" id="will-file" type="file" ref={inputRef} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" disabled={busy}
+            aria-invalid={Boolean(errors.file)} aria-describedby={`will-file-hint${errors.file ? ' will-file-error' : ''}`}
+            onChange={event => { if (pendingRef.current) return; setFile(event.target.files?.[0] || null); setErrors(old => ({ ...old, file: null })); setErrorCode(null); }} />
+          <button className="hn-will-picker" type="button" disabled={busy} onClick={() => inputRef.current?.click()}>
+            <span className="hn-will-document-icon" aria-hidden="true">↑</span><strong>{t.choose}</strong><span>{t.chooseHint}</span>
+          </button>
+          {file && <div className="hn-will-selected"><div><strong>{file.name}</strong><span>{formatFileSize(file.size)}</span></div><button type="button" disabled={busy} aria-label={t.remove} onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = ''; }}>{t.remove}</button></div>}
+          {errors.file && <p className="hn-will-error" id="will-file-error" role="alert">{willValidationMessages[language][errors.file]}</p>}
+          <label className="hn-will-label hn-will-note-label" htmlFor="will-note">{messages.NOTE_LABEL}<span>{note.length}/{MAX_NOTE_LENGTH}</span></label>
+          <textarea id="will-note" value={note} rows={3} maxLength={MAX_NOTE_LENGTH} disabled={busy} placeholder={messages.NOTE_PLACEHOLDER}
+            aria-invalid={Boolean(errors.note)} aria-describedby={errors.note ? 'will-note-error' : undefined} onChange={event => setNote(event.target.value)} />
+          {errors.note && <p className="hn-will-error" id="will-note-error" role="alert">{willValidationMessages[language][errors.note]}</p>}
+          {errorCode && <p className="hn-will-error hn-will-error-panel" role="alert">{t.errors[errorCode] || messages.UPLOAD_FAILED}</p>}
+          {busy && <div className="hn-will-progress" role="status"><div>{progress === 0 ? t.preparing : progress >= 99 ? t.confirming : t.sending} {progress != null && <span>{progress}%</span>}</div><progress max={100} value={progress == null ? undefined : progress} aria-label={t.progress} /></div>}
+          <div className="hn-will-actions"><button className="hn-will-primary" type="submit" disabled={busy}>{busy ? messages.UPLOADING_BTN : messages.UPLOAD_BTN}</button>
+            {busy && <button type="button" className="hn-will-secondary" onClick={() => requestRef.current?.abort()}>{t.cancel}</button>}
           </div>
-          <div>
-            <div className="hn-will-legal-title">{t.NOTICE_TITLE}</div>
-            <p className="hn-will-legal-body">{t.NOTICE_CONTENT}</p>
-          </div>
-        </aside>
-
-        {/* Submission Failure Alert */}
-        {submitError && (
-          <div className="hn-will-alert hn-will-alert-error" role="alert">
-            <span aria-hidden="true">⚠️</span>
-            <div>{submitError}</div>
-          </div>
-        )}
-
-        {/* Upload Form Card (Hidden or disabled after success) */}
-        {!uploadResult ? (
-          <section className="hn-will-card">
-            <div className="hn-will-card-header">
-              <h2 className="hn-will-card-title">
-                {lang === 'vi' ? 'Hồ sơ bản di chúc số hóa' : 'Digitized Will Document Record'}
-              </h2>
-              <p className="hn-will-card-subtitle">
-                {lang === 'vi'
-                  ? 'Hỗ trợ các định dạng tệp PDF, JPEG, PNG có dung lượng tối đa 10 MB.'
-                  : 'Supported file formats: PDF, JPEG, PNG up to 10 MB in file size.'}
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} noValidate>
-              {/* File Input Group */}
-              <div className="hn-will-form-group">
-                <label htmlFor="will-file-input" className="hn-will-label">
-                  <span>
-                    {t.FILE_LABEL} <span className="hn-will-label-required">*</span>
-                  </span>
-                </label>
-
-                <div
-                  className={`hn-will-file-box ${errors.file ? 'has-error' : ''}`}
-                  onClick={() => fileInputRef.current?.click()}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
-                  }}
-                >
-                  <input
-                    id="will-file-input"
-                    ref={fileInputRef}
-                    type="file"
-                    className="hn-will-file-input"
-                    accept={ACCEPTED_FILE_EXTENSIONS.join(',')}
-                    onChange={handleFileChange}
-                    disabled={isSubmitting}
-                    aria-describedby={errors.file ? 'will-file-error' : undefined}
-                  />
-
-                  <div className="hn-will-file-icon" aria-hidden="true">
-                    📁
-                  </div>
-                  <div className="hn-will-file-prompt">
-                    {lang === 'vi'
-                      ? 'Nhấn để chọn tệp từ thiết bị'
-                      : 'Click to browse file from device'}
-                  </div>
-                  <div className="hn-will-file-subtext">
-                    {lang === 'vi'
-                      ? 'Dung lượng tệp tối đa: 10 MB'
-                      : 'Maximum file size: 10 MB'}
-                  </div>
-                  <div className="hn-will-file-formats">
-                    <span className="hn-will-format-pill">PDF</span>
-                    <span className="hn-will-format-pill">JPEG</span>
-                    <span className="hn-will-format-pill">PNG</span>
-                  </div>
-                </div>
-
-                {/* Selected File Feedback */}
-                {selectedFile && (
-                  <div className="hn-will-selected-strip">
-                    <div className="hn-will-selected-left">
-                      <span className="hn-will-selected-icon" aria-hidden="true">
-                        📄
-                      </span>
-                      <div className="hn-will-selected-info">
-                        <span className="hn-will-selected-name">{selectedFile.name}</span>
-                        <span className="hn-will-selected-meta">
-                          {formatFileSize(selectedFile.size)} •{' '}
-                          {selectedFile.type || 'application/octet-stream'}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="hn-will-selected-clear"
-                      onClick={handleClearFile}
-                      aria-label={lang === 'vi' ? 'Hủy chọn tệp' : 'Clear selected file'}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-
-                {errors.file && (
-                  <div id="will-file-error" className="hn-will-error-msg" role="alert">
-                    <span aria-hidden="true">⚠️</span>
-                    <span>{errors.file}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Optional Note Group */}
-              <div className="hn-will-form-group">
-                <label htmlFor="will-note-input" className="hn-will-label">
-                  <span>{t.NOTE_LABEL}</span>
-                  <span className="hn-will-char-counter">
-                    {note.length}/{MAX_NOTE_LENGTH}
-                  </span>
-                </label>
-
-                <textarea
-                  id="will-note-input"
-                  className={`hn-will-textarea ${errors.note ? 'has-error' : ''}`}
-                  placeholder={t.NOTE_PLACEHOLDER}
-                  value={note}
-                  onChange={handleNoteChange}
-                  maxLength={MAX_NOTE_LENGTH}
-                  disabled={isSubmitting}
-                  aria-describedby={errors.note ? 'will-note-error' : undefined}
-                />
-
-                {errors.note && (
-                  <div id="will-note-error" className="hn-will-error-msg" role="alert">
-                    <span aria-hidden="true">⚠️</span>
-                    <span>{errors.note}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Form Action Row */}
-              <div className="hn-will-actions">
-                <button
-                  type="submit"
-                  className="hn-will-submit-btn"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span aria-hidden="true">⏳</span>
-                      <span>{t.UPLOADING_BTN}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span aria-hidden="true">📤</span>
-                      <span>{t.UPLOAD_BTN}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </section>
-        ) : (
-          /* Success Metadata Card */
-          <section className="hn-will-success-card" aria-label={t.UPLOAD_SUCCESS}>
-            <div className="hn-will-success-header">
-              <div className="hn-will-success-crest" aria-hidden="true">
-                ✓
-              </div>
-              <div>
-                <h2 className="hn-will-success-title">{t.UPLOAD_SUCCESS}</h2>
-                <p className="hn-will-success-desc">
-                  {lang === 'vi'
-                    ? 'Thông tin siêu dữ liệu toàn vẹn của bản di chúc đã được lưu trữ thành công.'
-                    : 'Integrity metadata for the digitized will has been successfully stored.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="hn-will-meta-grid">
-              {/* Document Status */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.STATUS_LABEL}</span>
-                <span className="hn-will-status-badge">
-                  <span aria-hidden="true">🔒</span>
-                  <span>{uploadResult.status}</span>
-                </span>
-              </div>
-
-              {/* Version */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.VERSION_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  v{uploadResult.currentVersion?.version || 1}
-                </span>
-              </div>
-
-              {/* Original File Name */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.FILE_NAME_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  {uploadResult.currentVersion?.fileName}
-                </span>
-              </div>
-
-              {/* Content Type */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.MIME_TYPE_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  {uploadResult.currentVersion?.contentType}
-                </span>
-              </div>
-
-              {/* File Size */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.FILE_SIZE_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  {formatFileSize(uploadResult.currentVersion?.sizeBytes)} (
-                  {uploadResult.currentVersion?.sizeBytes?.toLocaleString()} bytes)
-                </span>
-              </div>
-
-              {/* Uploaded At */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.UPLOADED_AT_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  {formatDateTime(uploadResult.currentVersion?.uploadedAt, lang)}
-                </span>
-              </div>
-
-              {/* Created At */}
-              <div className="hn-will-meta-item">
-                <span className="hn-will-meta-label">{t.CREATED_AT_LABEL}</span>
-                <span className="hn-will-meta-val">
-                  {formatDateTime(uploadResult.createdAt, lang)}
-                </span>
-              </div>
-            </div>
-
-            {/* SHA-256 Integrity Hash Detail Box */}
-            <div className="hn-will-meta-item" style={{ gridColumn: '1 / -1' }}>
-              <span className="hn-will-meta-label">{t.SHA256_LABEL}</span>
-              <div className="hn-will-sha-box">
-                {uploadResult.currentVersion?.sha256}
-              </div>
-              <div className="hn-will-sha-hint">{t.SHA256_HINT}</div>
-            </div>
-
-            {/* Action to upload new file or view inventory */}
-            <div className="hn-will-reupload-row">
-              <button
-                type="button"
-                className="hn-will-reupload-btn"
-                onClick={handleReset}
-              >
-                <span aria-hidden="true">↺</span>
-                <span>
-                  {lang === 'vi'
-                    ? 'Tải lên tệp di chúc khác'
-                    : 'Upload another document'}
-                </span>
-              </button>
-            </div>
-          </section>
-        )}
-      </main>
-    </div>
+        </form>
+      )}
+    </section>
   );
 }

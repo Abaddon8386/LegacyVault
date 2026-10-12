@@ -73,7 +73,7 @@ describe('Will Service & Mock Implementation (PS-7)', () => {
     };
     const note = 'Bản có chữ ký xác nhận';
 
-    const result = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, mockFile, note);
+    const result = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, mockFile, note, { isDevPreview: true, isTest: true });
 
     // Assert status is strictly UPLOADED and NOT LEGAL_APPROVED
     assert.equal(result.status, 'UPLOADED');

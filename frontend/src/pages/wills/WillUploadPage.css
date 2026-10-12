@@ -1,666 +1,418 @@
-/* ==========================================================================
-   WillUploadPage Stylesheet — LegacyVault (PS-7)
-   Art Direction: Editorial Luxury + Private Sanctuary (Henedo-Inspired)
-   Palette: Warm Cream (#F7F5F0), Noble Forest (#164639), Sand Gold (#C5A059)
-   ========================================================================== */
-
 .hn-will-page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100svh;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: var(--lv-bg-canvas, #f7f5f0);
-  box-sizing: border-box;
-  font-family: var(--lv-font-sans, 'Plus Jakarta Sans', system-ui, sans-serif);
-  color: var(--lv-text-ink, #1f2421);
+  max-width:920px;
+  margin:0 auto;
+  padding:4px 0 36px;
+  color:#243c32;
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif
 }
 
-/* ==========================================================================
-   Top Header Navigation Bar
-   ========================================================================== */
-.hn-will-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px clamp(20px, 4vw, 48px);
-  background: var(--lv-bg-surface, #ffffff);
-  border-bottom: 1px solid var(--lv-border-subtle, #eae5dc);
-  box-shadow: var(--lv-shadow-subtle, 0 1px 3px rgba(32, 33, 31, 0.05));
-}
-
-.hn-will-topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.hn-will-brand-lockup {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.hn-will-brand-crest {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1.5px solid var(--lv-accent-gold, #c5a059);
-  background: linear-gradient(135deg, #164639 0%, #0c2b22 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(22, 70, 57, 0.15);
-}
-
-.hn-will-brand-crest-symbol {
-  font-family: var(--lv-font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--lv-accent-gold, #c5a059);
-}
-
-.hn-will-brand-title {
-  font-family: var(--lv-font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  line-height: 1.2;
-}
-
-.hn-will-brand-subtitle {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--lv-accent-gold, #c5a059);
-  font-weight: 600;
-}
-
-.hn-will-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.hn-will-lang-switch {
-  display: inline-flex;
-  align-items: center;
-  background: var(--lv-bg-canvas, #f7f5f0);
-  border: 1px solid var(--lv-border-subtle, #eae5dc);
-  border-radius: var(--lv-radius-pill, 9999px);
-  padding: 3px;
-  gap: 2px;
-}
-
-.hn-will-lang-btn {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: var(--lv-radius-pill, 9999px);
-  border: none;
-  background: none;
-  color: var(--lv-text-muted, #6b726b);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.hn-will-lang-btn.is-active {
-  background: var(--lv-brand-forest, #164639);
-  color: #ffffff;
-}
-
-.hn-will-nav-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  background: var(--lv-bg-canvas, #f7f5f0);
-  border: 1px solid var(--lv-border-subtle, #eae5dc);
-  padding: 7px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.hn-will-nav-back:hover {
-  background: #ede8dc;
-  border-color: #ded9ce;
-}
-
-/* ==========================================================================
-   Main Content Container
-   ========================================================================== */
-.hn-will-container {
-  max-width: 860px;
-  width: 100%;
-  margin: 0 auto;
-  padding: clamp(24px, 4vw, 44px) 20px 60px;
-  box-sizing: border-box;
-}
-
-/* Page Intro Banner */
 .hn-will-intro {
-  margin-bottom: 28px;
+  margin-bottom:24px
 }
 
-.hn-will-badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--lv-brand-forest, #164639);
-  background: rgba(22, 70, 57, 0.08);
-  border: 1px solid rgba(22, 70, 57, 0.16);
-  padding: 5px 12px;
-  border-radius: var(--lv-radius-pill, 9999px);
-  margin-bottom: 12px;
+.hn-will-intro h1 {
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(28px,3vw,38px);
+  font-weight:600;
+  margin:0 0 12px;
+  color:#164639;
+  line-height:1.25
 }
 
-.hn-will-page-title {
-  font-family: var(--lv-font-serif, 'Playfair Display', Georgia, serif);
-  font-size: clamp(26px, 3.5vw, 34px);
-  color: var(--lv-brand-forest, #164639);
-  margin: 0 0 10px;
-  font-weight: 600;
-  line-height: 1.25;
+.hn-will-intro p {
+  margin:0;
+  color:#68736b;
+  line-height:1.7;
+  font-size:15px
 }
 
-.hn-will-page-desc {
-  font-size: 15px;
-  color: var(--lv-text-muted, #6b726b);
-  line-height: 1.6;
-  margin: 0;
-  max-width: 680px;
+.hn-will-notice {
+  display:flex;
+  gap:14px;
+  padding:18px 20px;
+  background:#fbf7ee;
+  border:1px solid #e7d8b8;
+  border-radius:14px;
+  margin-bottom:26px;
+  color:#775722
 }
 
-/* ==========================================================================
-   Legal Notice Banner (CRITICAL SEMANTICS)
-   ========================================================================== */
-.hn-will-legal-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background: #fdfaf4;
-  border: 1px solid #ebdcc0;
-  border-left: 4px solid var(--lv-accent-gold, #c5a059);
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 30px;
+.hn-will-notice>span {
+  font-size:22px
 }
 
-.hn-will-legal-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--lv-accent-gold, #c5a059);
-  flex-shrink: 0;
-  margin-top: 2px;
+.hn-will-notice strong {
+  font-size:14px
 }
 
-.hn-will-legal-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #7d591c;
-  margin: 0 0 4px;
+.hn-will-notice p {
+  margin:6px 0 0;
+  font-size:13px;
+  line-height:1.7
 }
 
-.hn-will-legal-body {
-  font-size: 13px;
-  color: #634b22;
-  line-height: 1.55;
-  margin: 0;
-}
-
-/* ==========================================================================
-   Main Form Card
-   ========================================================================== */
 .hn-will-card {
-  background: var(--lv-bg-surface, #ffffff);
-  border: 1px solid var(--lv-border-subtle, #eae5dc);
-  border-radius: 16px;
-  box-shadow: var(--lv-shadow-card, 0 4px 20px rgba(22, 70, 57, 0.05));
-  padding: clamp(24px, 4vw, 36px);
-  margin-bottom: 24px;
+  background:#fff;
+  border:1px solid #eae5dc;
+  border-radius:20px;
+  padding:clamp(20px,3vw,34px);
+  box-shadow:0 8px 32px #16463908
 }
 
-.hn-will-card-header {
-  border-bottom: 1px solid var(--lv-border-subtle, #eae5dc);
-  padding-bottom: 18px;
-  margin-bottom: 24px;
+.hn-will-card h2 {
+  margin:0 0 8px;
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:24px;
+  font-weight:600;
+  color:#164639
 }
 
-.hn-will-card-title {
-  font-family: var(--lv-font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 20px;
-  color: var(--lv-brand-forest, #164639);
-  margin: 0 0 6px;
-  font-weight: 600;
-}
-
-.hn-will-card-subtitle {
-  font-size: 13.5px;
-  color: var(--lv-text-muted, #6b726b);
-  margin: 0;
-}
-
-/* Form Groups */
-.hn-will-form-group {
-  margin-bottom: 22px;
-  display: flex;
-  flex-direction: column;
+.hn-will-formats {
+  font-size:13px;
+  color:#68736b;
+  margin:0 0 24px
 }
 
 .hn-will-label {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--lv-text-body, #2b302c);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  font-size:14px;
+  font-weight:600;
+  display:block;
+  margin-bottom:10px
 }
 
-.hn-will-label-required {
-  color: #a8433d;
-  margin-left: 4px;
-}
-
-.hn-will-char-counter {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--lv-text-light, #8c918b);
-}
-
-/* File Picker Box */
-.hn-will-file-box {
-  border: 2px dashed #ded9ce;
-  border-radius: 12px;
-  padding: 28px 20px;
-  background: #fbfaf8;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.hn-will-file-box:hover,
-.hn-will-file-box.is-focused {
-  border-color: var(--lv-accent-gold, #c5a059);
-  background: #fdfbf7;
-}
-
-.hn-will-file-box.has-error {
-  border-color: #a8433d;
-  background: #fff8f7;
+.hn-will-label>span {
+  color:#926d36
 }
 
 .hn-will-file-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  overflow:hidden;
+  clip-path:inset(50%)
 }
 
-.hn-will-file-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(197, 160, 89, 0.14);
-  color: var(--lv-accent-gold, #c5a059);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  font-size: 20px;
+.hn-will-picker {
+  width:100%;
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  gap:12px;
+  border:1.5px dashed #c5cfc6;
+  background:#fafbf8;
+  border-radius:14px;
+  padding:30px 20px;
+  color:#164639;
+  font:inherit;
+  cursor:pointer
 }
 
-.hn-will-file-prompt {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  margin: 0 0 4px;
+.hn-will-picker:hover {
+  border-color:#164639;
+  background:#f4f7f2
 }
 
-.hn-will-file-subtext {
-  font-size: 12.5px;
-  color: var(--lv-text-muted, #6b726b);
-  margin: 0 0 10px;
+.hn-will-picker>span:last-child {
+  font-size:13px;
+  font-weight:400;
+  color:#68736b;
+  line-height:1.7
 }
 
-.hn-will-file-formats {
-  display: inline-flex;
-  gap: 6px;
-  margin-top: 4px;
+.hn-will-document-icon {
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  background:#e8efe8;
+  display:grid;
+  place-items:center;
+  font-size:26px
 }
 
-.hn-will-format-pill {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  background: #efece6;
-  color: var(--lv-text-body, #2b302c);
-  border-radius: 4px;
+.hn-will-selected {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-top:14px;
+  border:1px solid #e5eae4;
+  border-radius:12px;
+  padding:14px;
+  background:#f9fbf8
 }
 
-/* Selected File Display Strip */
-.hn-will-selected-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: #edf3ef;
-  border: 1px solid #c9ecdb;
-  border-radius: 10px;
-  margin-top: 10px;
+.hn-will-selected>div {
+  flex:1;
+  min-width:0
 }
 
-.hn-will-selected-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
+.hn-will-selected strong {
+  display:block;
+  font-size:14px;
+  overflow-wrap:anywhere
 }
 
-.hn-will-selected-icon {
-  color: var(--lv-brand-forest, #164639);
-  font-size: 20px;
-  flex-shrink: 0;
+.hn-will-selected span {
+  display:block;
+  margin-top:6px;
+  font-size:12px;
+  color:#68736b
 }
 
-.hn-will-selected-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.hn-will-selected button {
+  background:none;
+  border:0;
+  color:#805b2c;
+  font:inherit;
+  font-size:12px;
+  cursor:pointer;
+  padding:8px;
+  flex-shrink:0
 }
 
-.hn-will-selected-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.hn-will-note-label {
+  margin-top:24px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px
 }
 
-.hn-will-selected-meta {
-  font-size: 12px;
-  color: #496b5a;
+.hn-will-note-label span {
+  font-size:12px;
+  color:#68736b;
+  font-weight:400
 }
 
-.hn-will-selected-clear {
-  background: none;
-  border: none;
-  color: var(--lv-text-muted, #6b726b);
-  padding: 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
+.hn-will-card textarea {
+  width:100%;
+  box-sizing:border-box;
+  font:inherit;
+  font-size:14px;
+  line-height:1.7;
+  padding:14px 16px;
+  border:1px solid #dce2da;
+  border-radius:12px;
+  resize:vertical;
+  min-height:100px;
+  color:#243c32;
+  background:#fff
 }
 
-.hn-will-selected-clear:hover {
-  color: #a8433d;
+.hn-will-card textarea::placeholder {
+  color:#778078
 }
 
-/* Textarea for note */
-.hn-will-textarea {
-  width: 100%;
-  min-height: 90px;
-  padding: 12px 14px;
-  background: var(--lv-bg-surface, #ffffff);
-  border: 1px solid var(--lv-border-medium, #ded9ce);
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--lv-text-ink, #1f2421);
-  box-sizing: border-box;
-  resize: vertical;
-  transition: all 0.2s ease;
-}
-
-.hn-will-textarea:focus {
-  outline: none;
-  border-color: var(--lv-accent-gold, #c5a059);
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.2);
-}
-
-.hn-will-textarea.has-error {
-  border-color: #a8433d;
-  background: #fff8f7;
-}
-
-/* Error Message */
-.hn-will-error-msg {
-  font-size: 12.5px;
-  color: #a8433d;
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-}
-
-/* Global Alert */
-.hn-will-alert {
-  padding: 14px 18px;
-  border-radius: 10px;
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 22px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.hn-will-alert-error {
-  background: #fff8f7;
-  border: 1px solid #f9d3cf;
-  color: #c25149;
-}
-
-/* Form Action Buttons */
 .hn-will-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid var(--lv-border-subtle, #eae5dc);
+  display:flex;
+  gap:12px;
+  margin-top:24px;
+  flex-wrap:wrap
 }
 
-.hn-will-submit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--lv-accent-gold, #c5a059);
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 14.5px;
-  padding: 13px 26px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  box-shadow: var(--lv-shadow-cta, 0 4px 14px rgba(197, 160, 89, 0.25));
-  transition: all 0.2s ease;
+.hn-will-primary,.hn-will-secondary {
+  font:inherit;
+  font-size:14px;
+  font-weight:600;
+  border-radius:10px;
+  padding:14px 22px;
+  cursor:pointer;
+  line-height:1.5
 }
 
-.hn-will-submit-btn:hover:not(:disabled) {
-  background: var(--lv-accent-gold-hover, #b58f47);
-  box-shadow: var(--lv-shadow-cta-hover, 0 6px 18px rgba(197, 160, 89, 0.35));
+.hn-will-primary {
+  background:#214638;
+  border:1px solid #214638;
+  color:#fff
 }
 
-.hn-will-submit-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.hn-will-primary:hover {
+  background:#143929
 }
 
-/* ==========================================================================
-   Success Metadata Display Card
-   ========================================================================== */
-.hn-will-success-card {
-  background: #ffffff;
-  border: 1px solid #c9ecdb;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(22, 70, 57, 0.06);
-  padding: clamp(24px, 4vw, 36px);
-  margin-top: 28px;
-  animation: lv-fade-slide-up 0.35s ease;
+.hn-will-secondary {
+  background:#fff;
+  border:1px solid #dce2da;
+  color:#214638
 }
 
-.hn-will-success-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 22px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid #e1f0e8;
+.hn-will-page button:disabled {
+  cursor:default;
+  opacity:.6
 }
 
-.hn-will-success-crest {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #f4fbf7;
-  color: #1d724f;
-  border: 1.5px solid #c9ecdb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
+.hn-will-page :focus-visible {
+  outline:3px solid #c5a059;
+  outline-offset:3px
 }
 
-.hn-will-success-title {
-  font-family: var(--lv-font-serif, 'Playfair Display', Georgia, serif);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  margin: 0 0 4px;
+.hn-will-file-input:focus-visible+.hn-will-picker {
+  outline:3px solid #c5a059;
+  outline-offset:3px
 }
 
-.hn-will-success-desc {
-  font-size: 13px;
-  color: var(--lv-text-muted, #6b726b);
-  margin: 0;
+.hn-will-error {
+  font-size:13px;
+  line-height:1.7;
+  color:#a03832;
+  margin:10px 0
 }
 
-/* Metadata Grid */
-.hn-will-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
-  margin-bottom: 22px;
+.hn-will-error-panel {
+  background:#fcf2f0;
+  border:1px solid #edcbc5;
+  border-radius:10px;
+  padding:12px 16px
 }
 
-.hn-will-meta-item {
-  background: #fcfbf8;
-  border: 1px solid var(--lv-border-subtle, #eae5dc);
-  border-radius: 10px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.hn-will-progress {
+  margin-top:20px;
+  font-size:13px;
+  color:#164639
 }
 
-.hn-will-meta-label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--lv-text-muted, #6b726b);
+.hn-will-progress>div {
+  display:flex;
+  justify-content:space-between;
+  gap:12px
 }
 
-.hn-will-meta-val {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--lv-text-ink, #1f2421);
-  word-break: break-all;
+.hn-will-progress progress {
+  width:100%;
+  height:10px;
+  margin-top:10px;
+  accent-color:#214638
 }
 
-/* Specific Badges */
-.hn-will-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #2b5788;
-  background: #f7f9fc;
-  border: 1px solid #d4e0ee;
-  padding: 4px 10px;
-  border-radius: 6px;
-  width: fit-content;
+.hn-will-success {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:24px
 }
 
-.hn-will-sha-box {
-  background: #f4f3ef;
-  border: 1px solid #ded9ce;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-family: var(--lv-font-mono, ui-monospace, Consolas, monospace);
-  font-size: 12px;
-  color: #1f2421;
-  word-break: break-all;
-  line-height: 1.4;
-  margin-top: 4px;
+.hn-will-success>span {
+  width:48px;
+  height:48px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:#eaf2e9;
+  color:#214638;
+  display:grid;
+  place-items:center;
+  font-size:24px
 }
 
-.hn-will-sha-hint {
-  font-size: 12px;
-  color: var(--lv-text-muted, #6b726b);
-  margin-top: 6px;
-  font-style: italic;
+.hn-will-success p {
+  font-size:14px;
+  color:#68736b;
+  line-height:1.7;
+  margin:0
 }
 
-/* Secondary Action Row */
-.hn-will-reupload-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 18px;
+.hn-will-metadata {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px 32px;
+  border-top:1px solid #eae5dc;
+  padding-top:24px;
+  margin:0 0 28px
 }
 
-.hn-will-reupload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--lv-brand-forest, #164639);
-  background: #f1ede4;
-  border: 1px solid #ded9ce;
-  padding: 9px 18px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.hn-will-metadata div {
+  min-width:0
 }
 
-.hn-will-reupload-btn:hover {
-  background: #e7e2d6;
+.hn-will-metadata dt {
+  font-size:12px;
+  color:#68736b;
+  margin-bottom:8px
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .hn-will-meta-grid {
-    grid-template-columns: 1fr;
+.hn-will-metadata dd {
+  font-size:14px;
+  margin:0;
+  overflow-wrap:anywhere;
+  line-height:1.7
+}
+
+.hn-will-status {
+  display:inline-block;
+  color:#214638;
+  background:#eaf2e9;
+  padding:4px 12px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:600
+}
+
+.hn-will-hash {
+  background:#f8faf6;
+  border:1px solid #e5eae4;
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:24px
+}
+
+.hn-will-hash summary {
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer
+}
+
+.hn-will-hash p {
+  font-size:12px;
+  line-height:1.7;
+  color:#68736b
+}
+
+.hn-will-hash code {
+  display:block;
+  overflow-wrap:anywhere;
+  font-size:12px;
+  line-height:1.8;
+  color:#214638
+}
+
+@media(max-width:640px) {
+  .hn-will-page {
+    padding-top:0
   }
-
+  .hn-will-intro {
+    margin-bottom:20px
+  }
+  .hn-will-notice {
+    padding:14px;
+    gap:10px
+  }
+  .hn-will-card {
+    border-radius:16px;
+    padding:20px 16px
+  }
+  .hn-will-picker {
+    padding:24px 14px
+  }
+  .hn-will-metadata {
+    grid-template-columns:1fr;
+    gap:20px
+  }
   .hn-will-actions {
-    flex-direction: column;
+    flex-direction:column
   }
+  .hn-will-primary,.hn-will-secondary {
+    width:100%;
+    padding:13px
+  }
+  .hn-will-success {
+    align-items:flex-start
+  }
+  .hn-will-card h2 {
+    font-size:22px
+  }
+}
 
-  .hn-will-submit-btn {
-    width: 100%;
+@media(prefers-reduced-motion:reduce) {
+  .hn-will-page * {
+    animation:none!important;
+    transition:none!important
   }
 }

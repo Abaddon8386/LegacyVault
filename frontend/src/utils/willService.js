@@ -1,115 +1,56 @@
-/**
- * LegacyVault — Will Service & Mock Implementation (PS-7)
- *
- * SPECIFICATION & SAFETY BOUNDARIES:
- * - Contract: POST /api/v1/vaults/{vaultId}/wills (multipart/form-data)
- * - Returns 201 Created + WillResponse
- * - Status: 'UPLOADED'
- * - CurrentVersion: { version: 1, fileName, contentType, sizeBytes, sha256, uploadedAt }
- *
- * CRITICAL SEMANTICS:
- * 1. Upload does NOT mean legally approved. Status is strictly UPLOADED.
- * 2. Do not display LEGAL_APPROVED or claim legal validity.
- * 3. SHA-256 only denotes cryptographic integrity metadata, not legal authenticity.
- * 4. Raw file contents are NEVER rendered, logged, or unnecessarily persisted.
- * 5. Mock mode simulates upload latency and computes metadata safely.
- */
+import { getWillUploadErrors, getWillContentType } from './willValidation.js';
 
 export const DEFAULT_MOCK_VAULT_ID = '00000000-0000-0000-0000-000000000001';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const fail = (code, status) => Object.assign(new Error(code), { code, status });
+const checkAbort = (signal) => { if (signal?.aborted) throw fail('ABORTED'); };
 
-/**
- * Compute the REAL SHA-256 hex digest of file bytes.
- * Uses browser crypto.subtle.digest('SHA-256', bytes) when available.
- * In Node test environment, falls back to node:crypto createHash('sha256').
- * If environment cannot compute SHA-256, fails clearly rather than fabricating a fake digest.
- *
- * Requirements:
- * - sha256 = lowercase 64-character hex digest of actual file content
- * - same bytes -> same hash
- * - different bytes -> different hash
- * - NO random/fake fallback
- *
- * @param {File|Blob|{arrayBuffer: Function}|Buffer|Uint8Array} file
- * @returns {Promise<string>} lowercase 64-character hex string
- */
+export function isWillPreview(options = {}) {
+  const env = import.meta.env;
+  if (env?.PROD) return false;
+  return Boolean(options.isDevPreview && (env?.DEV || (!env && options.isTest && globalThis.process?.versions?.node)));
+}
+
 export async function computeFileSha256(file) {
-  if (!file) {
-    throw new Error('FILE_REQUIRED_FOR_HASH');
-  }
-
-  let buffer;
-
-  // 1. Extract raw byte ArrayBuffer or Buffer
-  const isNodeBuffer = typeof globalThis.Buffer !== 'undefined' && globalThis.Buffer.isBuffer(file);
-
-  if (typeof file.arrayBuffer === 'function') {
-    buffer = await file.arrayBuffer();
-  } else if (isNodeBuffer) {
-    buffer = file;
-  } else if (file instanceof Uint8Array) {
-    buffer = file.buffer;
-  } else if (typeof FileReader !== 'undefined' && file instanceof Blob) {
-    buffer = await new Promise((resolve, reject) => {
+  if (!file) throw fail('FILE_REQUIRED_FOR_HASH');
+  let bytes;
+  if (typeof file === 'string') bytes = new TextEncoder().encode(file);
+  else if (ArrayBuffer.isView(file)) bytes = new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
+  else if (typeof file.arrayBuffer === 'function') bytes = new Uint8Array(await file.arrayBuffer());
+  else if (typeof FileReader !== 'undefined' && file instanceof Blob) {
+    bytes = new Uint8Array(await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
+      reader.onerror = () => reject(fail('CANNOT_READ_FILE_BYTES'));
       reader.readAsArrayBuffer(file);
-    });
-  } else if (file.buffer instanceof ArrayBuffer) {
-    buffer = file.buffer;
-  } else if (typeof file === 'string') {
-    buffer = new TextEncoder().encode(file).buffer;
-  } else {
-    throw new Error('CANNOT_READ_FILE_BYTES: Unable to extract arrayBuffer from file object');
+    }));
+  } else throw fail('CANNOT_READ_FILE_BYTES');
+  if (globalThis.crypto?.subtle) {
+    const hash = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
   }
-
-  // 2. Compute real SHA-256 digest using SubtleCrypto
-  const subtleCrypto =
-    (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) ||
-    (typeof window !== 'undefined' && window.crypto?.subtle);
-
-  if (subtleCrypto && typeof subtleCrypto.digest === 'function') {
-    const arrayBuffer = buffer instanceof ArrayBuffer ? buffer : buffer.buffer || buffer;
-    const digestBuffer = await subtleCrypto.digest('SHA-256', arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(digestBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+  if (globalThis.process?.versions?.node) {
+    const moduleName = 'node:crypto';
+    const { createHash } = await import(/* @vite-ignore */ moduleName);
+    return createHash('sha256').update(bytes).digest('hex');
   }
-
-  // 3. Fallback for Node.js test environment (node:crypto)
-  const nodeProcess = typeof globalThis.process !== 'undefined' ? globalThis.process : null;
-  if (nodeProcess && nodeProcess.versions?.node) {
-    try {
-      const nodeCryptoModule = 'node:crypto';
-      const { createHash } = await import(/* @vite-ignore */ nodeCryptoModule);
-      const hash = createHash('sha256');
-      if (typeof globalThis.Buffer !== 'undefined' && globalThis.Buffer.isBuffer(buffer)) {
-        hash.update(buffer);
-      } else {
-        hash.update(new Uint8Array(buffer));
-      }
-      return hash.digest('hex').toLowerCase();
-    } catch {
-      throw new Error('CRYPTO_UNAVAILABLE: Node crypto unavailable for SHA-256 calculation');
-    }
-  }
-
-  throw new Error('CRYPTO_UNAVAILABLE: Environment does not support SHA-256 cryptographic calculation');
+  throw fail('CRYPTO_UNAVAILABLE');
 }
 
 export const willStatusMessages = {
   vi: {
-    UPLOADED: 'Đã tải lên hệ thống (Chờ các bước kế tiếp)',
+    UPLOADED: 'Đã tải lên',
     INTEGRITY_VERIFIED: 'Đã tạo mã băm toàn vẹn SHA-256',
-    NOTICE_TITLE: 'Lưu ý pháp lý quan trọng',
+    NOTICE_TITLE: 'Lưu ý về bản di chúc',
     NOTICE_CONTENT:
-      'Hành động tải lên bản di chúc số hóa chỉ mang tính chất lưu trữ hồ sơ và xác thực tính toàn vẹn kỹ thuật (SHA-256). Việc này KHÔNG đồng nghĩa với việc di chúc đã được chứng thực, công chứng, hoặc có hiệu lực pháp lý chính thức theo quy định pháp luật hiện hành.',
+      'Bản số hóa dùng để lưu hồ sơ. Việc tải lên chưa phải xác nhận giá trị pháp lý; bản giấy vẫn cần được kiểm tra.',
     UPLOAD_SUCCESS: 'Tải lên bản di chúc số hóa thành công.',
     UPLOAD_FAILED: 'Không thể tải lên bản di chúc. Vui lòng kiểm tra lại kết nối và thử lại.',
     FILE_LABEL: 'Tệp tài liệu di chúc',
     NOTE_LABEL: 'Ghi chú bổ sung (Tùy chọn)',
-    NOTE_PLACEHOLDER: 'Ví dụ: Bản chụp có chữ ký xác nhận của người làm chứng...',
+    NOTE_PLACEHOLDER: 'Ví dụ: Bản chụp được lưu ngày 12/10/2026…',
     UPLOAD_BTN: 'Tải lên bản di chúc số hóa',
-    UPLOADING_BTN: 'Đang tải lên và tính toán mã băm...',
+    UPLOADING_BTN: 'Đang tải lên…',
     STATUS_LABEL: 'Trạng thái tài liệu',
     VERSION_LABEL: 'Phiên bản lưu trữ',
     FILE_NAME_LABEL: 'Tên tệp gốc',
@@ -121,23 +62,23 @@ export const willStatusMessages = {
     SHA256_HINT: 'Mã băm chỉ dùng để đối soát tính toàn vẹn của tệp, không mang giá trị chứng thực pháp lý.',
   },
   en: {
-    UPLOADED: 'Uploaded to System (Pending further steps)',
+    UPLOADED: 'Uploaded',
     INTEGRITY_VERIFIED: 'SHA-256 Integrity Hash Generated',
-    NOTICE_TITLE: 'Important Legal Advisory',
+    NOTICE_TITLE: 'About your will document',
     NOTICE_CONTENT:
-      'Uploading a digitized will document is strictly for secure inventory retention and technical integrity verification (SHA-256). It does NOT constitute notarization, legal approval, or formal validity under applicable succession laws.',
+      'A digitized copy is stored as a record. Uploading does not constitute legal approval; the paper document still needs to be checked.',
     UPLOAD_SUCCESS: 'Digitized will document uploaded successfully.',
     UPLOAD_FAILED: 'Failed to upload digitized will. Please check your connection and try again.',
     FILE_LABEL: 'Digitized Will Document',
     NOTE_LABEL: 'Additional Notes (Optional)',
-    NOTE_PLACEHOLDER: 'e.g., Scanned copy signed before witness...',
+    NOTE_PLACEHOLDER: 'e.g., Scanned copy saved on 12 October 2026…',
     UPLOAD_BTN: 'Upload Digitized Will',
-    UPLOADING_BTN: 'Uploading & generating integrity hash...',
+    UPLOADING_BTN: 'Uploading…',
     STATUS_LABEL: 'Document Status',
     VERSION_LABEL: 'Storage Version',
     FILE_NAME_LABEL: 'Original File Name',
     FILE_SIZE_LABEL: 'File Size',
-    MIME_TYPE_LABEL: 'MIME Type',
+    MIME_TYPE_LABEL: 'File Format',
     SHA256_LABEL: 'Integrity Checksum (SHA-256)',
     UPLOADED_AT_LABEL: 'Uploaded At',
     CREATED_AT_LABEL: 'Record Created At',
@@ -145,109 +86,97 @@ export const willStatusMessages = {
   },
 };
 
-/**
- * Format file size into human-readable representation.
- * @param {number} bytes
- * @returns {string} e.g. "2.4 MB" or "840 KB"
- */
+
 export function formatFileSize(bytes = 0) {
   if (bytes === 0) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
+export function formatDateTime(value, lang = 'vi') {
+  const date = new Date(value);
+  if (!value || !Number.isFinite(date.getTime())) return '—';
+  return date.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN');
+}
+const cleanName = value => typeof value === 'string' ? value.split(/[\\/]/).pop().split('').filter(char => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127).join('').trim() : '';
+const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
 
-/**
- * Format ISO datetime string in a localized format.
- * @param {string} isoString
- * @param {string} lang
- * @returns {string}
- */
-export function formatDateTime(isoString, lang = 'vi') {
-  if (!isoString) return '—';
-  try {
-    const date = new Date(isoString);
-    return date.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  } catch {
-    return isoString;
-  }
+// Never turn an unrelated receipt, legal state, or malformed response into upload success.
+export function readWillReceipt(data, vaultId, file) {
+  const v = data?.currentVersion;
+  if (!UUID.test(data?.id) || data?.vaultId !== vaultId || data?.status !== 'UPLOADED' ||
+      !validDate(data?.createdAt) || !v || v.version !== 1 || !cleanName(v.fileName) ||
+      v.fileName !== cleanName(v.fileName) || v.fileName !== cleanName(file.name) ||
+      v.contentType !== getWillContentType(file) || v.sizeBytes !== file.size || !validDate(v.uploadedAt) ||
+      (v.sha256 != null && !/^[0-9a-f]{64}$/.test(v.sha256))) throw fail('BACKEND_NOT_READY');
+  // Whitelist metadata. Raw payloads, tokens and arbitrary backend fields never reach the view.
+  return { id: data.id, vaultId: data.vaultId, status: 'UPLOADED', createdAt: data.createdAt,
+    currentVersion: { version: v.version, fileName: v.fileName, contentType: v.contentType,
+      sizeBytes: v.sizeBytes, uploadedAt: v.uploadedAt, ...(v.sha256 ? { sha256: v.sha256 } : {}) } };
+}
+const HTTP_ERRORS = { 400: 'VALIDATION_FAILED', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN',
+  404: 'NOT_FOUND', 409: 'VAULT_NOT_EDITABLE', 413: 'PAYLOAD_TOO_LARGE', 415: 'UNSUPPORTED_MEDIA_TYPE' };
+
+function pause(signal) {
+  return new Promise((resolve, reject) => {
+    checkAbort(signal);
+    const aborted = () => { clearTimeout(timer); signal.removeEventListener('abort', aborted); reject(fail('ABORTED')); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', aborted); resolve(); }, 300);
+    signal?.addEventListener('abort', aborted, { once: true });
+  });
 }
 
-/**
- * Will Service API interface & Mock execution.
- */
 export const willService = {
-  /**
-   * Upload digitized will document.
-   * @param {string} vaultId - Vault UUID
-   * @param {File} file - Validated document file
-   * @param {string} [note=''] - Optional note <= 500 chars
-   * @param {Object} [options]
-   * @param {boolean} [options.isMock=true]
-   * @returns {Promise<Object>} WillResponse schema
-   */
-  async uploadWill(vaultId = DEFAULT_MOCK_VAULT_ID, file, note = '', options = {}) {
-    const isMock = options.isMock !== false;
-
-    if (!file) {
-      throw new Error('FILE_REQUIRED');
-    }
-
-    if (isMock) {
-      // Simulate realistic upload and hashing latency
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const now = new Date().toISOString();
+  async uploadWill(vaultId, file, note = '', options = {}) {
+    checkAbort(options.signal);
+    const errors = getWillUploadErrors({ file, note });
+    if (Object.keys(errors).length) throw Object.assign(fail(file ? 'VALIDATION_FAILED' : 'FILE_REQUIRED'), { fieldErrors: errors });
+    const preview = isWillPreview(options);
+    const targetVault = preview ? (vaultId || DEFAULT_MOCK_VAULT_ID) : vaultId;
+    if (!UUID.test(targetVault || '')) throw fail('BACKEND_NOT_READY');
+    const progress = value => { checkAbort(options.signal); options.onProgress?.(value); };
+    progress(0);
+    if (preview) {
+      // Explicit development preview only. No persistence or file-content view/download.
+      await pause(options.signal); progress(45);
       const sha256 = await computeFileSha256(file);
-
-      // Return strictly aligned WillResponse schema
-      const response = {
-        id: 'w1111111-2222-3333-4444-555555555555',
-        vaultId: vaultId || DEFAULT_MOCK_VAULT_ID,
-        status: 'UPLOADED', // NEVER LEGAL_APPROVED
-        note: (note || '').trim() || null,
-        currentVersion: {
-          version: 1,
-          fileName: file.name,
-          contentType: file.type || 'application/pdf',
-          sizeBytes: file.size,
-          sha256,
-          uploadedAt: now,
-        },
-        createdAt: now,
-        updatedAt: now,
+      checkAbort(options.signal); progress(90); await pause(options.signal);
+      const now = new Date().toISOString();
+      const receipt = readWillReceipt({ id: globalThis.crypto.randomUUID(), vaultId: targetVault, status: 'UPLOADED',
+        createdAt: now, currentVersion: { version: 1, fileName: cleanName(file.name),
+          contentType: getWillContentType(file), sizeBytes: file.size, sha256, uploadedAt: now } }, targetVault, file);
+      progress(100); return receipt;
+    }
+    const body = new FormData(); body.append('file', file);
+    if (note.trim()) body.append('note', note.trim());
+    return new Promise((resolve, reject) => {
+      const xhr = options.xhrFactory ? options.xhrFactory() : new XMLHttpRequest();
+      let settled = false;
+      const cleanup = () => { options.signal?.removeEventListener('abort', abort); xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = null; xhr.upload.onprogress = null; };
+      const finish = (error, result) => { if (settled) return; settled = true; cleanup(); if (error) reject(error); else resolve(result); };
+      const abort = () => { xhr.abort(); finish(fail('ABORTED')); };
+      xhr.open('POST', `/api/v1/vaults/${targetVault}/wills`);
+      xhr.timeout = 120000;
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('Accept-Language', options.lang === 'en' ? 'en' : 'vi');
+      if (options.accessToken) xhr.setRequestHeader('Authorization', `Bearer ${options.accessToken}`);
+      xhr.upload.onprogress = event => {
+        if (!settled && !options.signal?.aborted) options.onProgress?.(event.lengthComputable && event.total > 0 ? Math.min(99, Math.floor(event.loaded / event.total * 100)) : null);
       };
-
-      return response;
-    }
-
-    // Real API integration when backend is available
-    const formData = new FormData();
-    formData.append('file', file);
-    if (note && note.trim()) {
-      formData.append('note', note.trim());
-    }
-
-    const res = await fetch(`/api/v1/vaults/${vaultId}/wills`, {
-      method: 'POST',
-      body: formData,
+      xhr.onload = () => {
+        if (xhr.status !== 201) return finish(fail(HTTP_ERRORS[xhr.status] || (xhr.status >= 500 ? 'UPLOAD_FAILED' : 'BACKEND_NOT_READY'), xhr.status));
+        try {
+          if (!/application\/(?:[a-z0-9.+-]*\+)?json/i.test(xhr.getResponseHeader('Content-Type') || '')) throw fail('BACKEND_NOT_READY');
+          const receipt = readWillReceipt(JSON.parse(xhr.responseText), targetVault, file);
+          progress(100); finish(null, receipt);
+        } catch { finish(fail('BACKEND_NOT_READY', xhr.status)); }
+      };
+      xhr.onerror = () => finish(fail('UPLOAD_FAILED'));
+      xhr.ontimeout = () => finish(fail('TIMEOUT'));
+      xhr.onabort = () => finish(fail('ABORTED'));
+      options.signal?.addEventListener('abort', abort, { once: true });
+      if (options.signal?.aborted) return abort();
+      try { xhr.send(body); } catch { finish(fail('UPLOAD_FAILED')); }
     });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const error = new Error(errBody.message || 'UPLOAD_FAILED');
-      error.status = res.status;
-      error.code = errBody.code || 'UNKNOWN_ERROR';
-      throw error;
-    }
-
-    return res.json();
   },
 };

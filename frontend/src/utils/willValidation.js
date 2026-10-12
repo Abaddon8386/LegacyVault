@@ -12,7 +12,7 @@
  * - Does not read or extract plaintext content.
  */
 
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // Provisional FE policy from PS-74 proposal; BE remains the security authority.
 export const MAX_NOTE_LENGTH = 500;
 
 export const ACCEPTED_MIME_TYPES = [
@@ -48,49 +48,24 @@ export const willValidationMessages = {
  * @param {string} [lang='vi']
  * @returns {Object} map of field errors, empty object if valid
  */
-export function validateWillUpload({ file, note = '' }, lang = 'vi') {
-  const msgs = willValidationMessages[lang] || willValidationMessages.vi;
+export function getWillUploadErrors({ file, note = '' }) {
   const errors = {};
-
-  // 1. File presence
-  if (!file) {
-    errors.file = msgs.fileRequired;
-    return errors;
-  }
-
-  // 2. Non-empty file
-  if (typeof file.size === 'number' && file.size === 0) {
-    errors.file = msgs.fileEmpty;
-    return errors;
-  }
-
-  // 3. File type validation (MIME-first; backend is security authority)
-  // Contract accepts: application/pdf, image/jpeg, image/png
-  // FE validation is UX-only. If MIME type is present, validate against accepted MIME types.
-  // If MIME type is missing/blank, fall back to filename extension as a UX hint.
-  const mimeType = (file.type || '').toLowerCase();
-  const fileName = (file.name || '').toLowerCase();
-
-  if (mimeType) {
-    if (!ACCEPTED_MIME_TYPES.includes(mimeType)) {
-      errors.file = msgs.fileTypeInvalid;
-    }
-  } else {
-    const hasValidExtension = ACCEPTED_FILE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
-    if (!hasValidExtension) {
-      errors.file = msgs.fileTypeInvalid;
-    }
-  }
-
-  // 4. File size validation (<= 10MB)
-  if (typeof file.size === 'number' && file.size > MAX_FILE_SIZE_BYTES) {
-    errors.file = msgs.fileSizeExceeded;
-  }
-
-  // 5. Note validation (optional, max 500 characters)
-  if (note && note.length > MAX_NOTE_LENGTH) {
-    errors.note = msgs.noteTooLong;
-  }
-
+  if (!file) errors.file = 'fileRequired';
+  else if (!Number.isSafeInteger(file.size) || file.size <= 0) errors.file = 'fileEmpty';
+  else if (file.size > MAX_FILE_SIZE_BYTES) errors.file = 'fileSizeExceeded';
+  else if (!getWillContentType(file)) errors.file = 'fileTypeInvalid';
+  if (typeof note !== 'string' || note.length > MAX_NOTE_LENGTH) errors.note = 'noteTooLong';
   return errors;
+}
+
+export function getWillContentType(file) {
+  const type = (file?.type || '').toLowerCase();
+  if (type) return ACCEPTED_MIME_TYPES.includes(type) ? type : null;
+  const extension = (file?.name || '').toLowerCase().split('.').pop();
+  return { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' }[extension] || null;
+}
+
+export function validateWillUpload(params, lang = 'vi') {
+  const messages = willValidationMessages[lang] || willValidationMessages.vi;
+  return Object.fromEntries(Object.entries(getWillUploadErrors(params)).map(([field, key]) => [field, messages[key]]));
 }

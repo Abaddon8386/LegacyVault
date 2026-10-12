@@ -120,7 +120,7 @@ describe('Digitized Will Upload Flow & Safety Contract (PS-7)', () => {
         arrayBuffer: async () => new TextEncoder().encode('dummy pdf content 1').buffer,
       };
 
-      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, 'Lưu trữ ban đầu');
+      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, 'Lưu trữ ban đầu', { isDevPreview: true, isTest: true });
 
       assert.equal(response.status, 'UPLOADED');
       assert.notEqual(response.status, 'LEGAL_APPROVED');
@@ -136,7 +136,7 @@ describe('Digitized Will Upload Flow & Safety Contract (PS-7)', () => {
         arrayBuffer: async () => new TextEncoder().encode('dummy png content 2').buffer,
       };
 
-      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, '');
+      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, '', { isDevPreview: true, isTest: true });
 
       assert.equal(response.currentVersion.version, 1);
       assert.equal(response.currentVersion.fileName, sampleFile.name);
@@ -157,7 +157,7 @@ describe('Digitized Will Upload Flow & Safety Contract (PS-7)', () => {
         arrayBuffer: async () => new TextEncoder().encode('dummy private content 3').buffer,
       };
 
-      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, '');
+      const response = await willService.uploadWill(DEFAULT_MOCK_VAULT_ID, sampleFile, '', { isDevPreview: true, isTest: true });
 
       // Verify no binary content or base64 data leak
       assert.equal(response.currentVersion.content, undefined);
@@ -171,8 +171,8 @@ describe('Digitized Will Upload Flow & Safety Contract (PS-7)', () => {
 
   describe('6. Legal & Integrity Wording Standards', () => {
     it('advisory message explicitly warns that upload does NOT constitute legal approval', () => {
-      assert.ok(willStatusMessages.vi.NOTICE_CONTENT.includes('KHÔNG đồng nghĩa với việc di chúc đã được chứng thực'));
-      assert.ok(willStatusMessages.en.NOTICE_CONTENT.includes('does NOT constitute notarization, legal approval'));
+      assert.ok(willStatusMessages.vi.NOTICE_CONTENT.includes('chưa phải xác nhận giá trị pháp lý'));
+      assert.ok(willStatusMessages.en.NOTICE_CONTENT.includes('does not constitute legal approval'));
     });
 
     it('SHA-256 hint clarifies hash is for integrity check only, not legal certification', () => {
